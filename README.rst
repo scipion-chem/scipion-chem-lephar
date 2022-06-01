@@ -2,7 +2,8 @@
 LePhar scipion plugin
 ================================
 
-LePhar software plugin defining objects and protocols for docking and scoring
+LePhar software plugin defining objects and protocols for docking.
+You can check their website in http://www.lephar.com/index.htm
 
 ===================
 Install this plugin
@@ -34,6 +35,14 @@ OR
 .. code-block::
 
             scipion3 installp -p path_to_scipion-chem-lephar --devel
+
+=================
+Included programs
+=================
+
+Currently, the following programs are included in the Scipion interface:
+    - **LePro**: For protein structure preparation
+    - **LeDock**: For protein-ligand docking
 
 ===============
 Buildbot status

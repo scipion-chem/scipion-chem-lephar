@@ -1,6 +1,6 @@
 # **************************************************************************
 # *
-# * Authors:     Carlos Oscar Sorzano (coss@cnb.csic.es)
+# * Authors:     Daniel Del Hoyo Gomez (ddelhoyo@cnb.csic.es)
 # *
 # * Unidad de  Bioinformatica of Centro Nacional de Biotecnologia , CSIC
 # *
@@ -72,9 +72,9 @@ class ProtChemLeDock(EMProtocol):
                        help='The radius * n of each pocket will be used as grid radius')
 
         group = form.addGroup('Docking')
-        group.addParam('inputLibrary', PointerParam, pointerClass="SetOfSmallMolecules",
+        group.addParam('inputSmallMolecules', PointerParam, pointerClass="SetOfSmallMolecules",
                        label='Ligand library: ', allowsNull=False,
-                       help="The library must be prepared for autodock")
+                       help="Input set of small molecules to dock with LeDock")
         group.addParam('rmsTol', FloatParam, label='Cluster RMSD (A): ', default=1.0, expertLevel=LEVEL_ADVANCED,)
         group.addParam('gaRun', IntParam, label='Number of positions per ligand: ', default=10)
 
@@ -106,7 +106,7 @@ class ProtChemLeDock(EMProtocol):
         #list of mol2 files for ligands. lefrag for dividing mol2 multiple files
         with open(self.getLigandListFile(), 'w') as fLig:
             with open(self.getLigandListFile(base=True), 'w') as fLigBase:
-                for mol in self.inputLibrary.get():
+                for mol in self.inputSmallMolecules.get():
                     molFile = mol.getFileName()
                     if not molFile.endswith('.mol2'):
                         inName, inExt = os.path.splitext(os.path.basename(molFile))
@@ -177,6 +177,9 @@ class ProtChemLeDock(EMProtocol):
             elif not self.pocketRadiusN.get():
                 errors.append('You need to specify a radius coefficient to adjust the pocket radius.')
         return errors
+
+    def _citations(self):
+        return ['C6CP01555G']
       
 ########################### Utils functions ############################
 
@@ -189,7 +192,7 @@ class ProtChemLeDock(EMProtocol):
 
     def getInputMolsDic(self):
         dic = {}
-        for mol in self.inputLibrary.get():
+        for mol in self.inputSmallMolecules.get():
             dic[mol.clone().getMolName()] = mol.clone()
         return dic
 
