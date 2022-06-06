@@ -110,9 +110,9 @@ class ProtChemLeDock(EMProtocol):
                     molFile = mol.getFileName()
                     if not molFile.endswith('.mol2'):
                         inName, inExt = os.path.splitext(os.path.basename(molFile))
-                        oFile = os.path.abspath(os.path.join(self._getExtraPath(inName + '.pdb')))
+                        oFile = os.path.abspath(os.path.join(self._getExtraPath(inName + '.mol2')))
 
-                        args = ' -i{} {} -opdb -O {}'.format(inExt[1:], os.path.abspath(molFile), oFile)
+                        args = ' -i{} {} -omol2 -O {}'.format(inExt[1:], os.path.abspath(molFile), oFile)
                         runOpenBabel(protocol=self, args=args, cwd=self._getExtraPath())
                         molFile = oFile
 
