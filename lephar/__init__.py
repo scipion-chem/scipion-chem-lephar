@@ -87,7 +87,7 @@ class Plugin(pwem.Plugin):
           protocol.runJob(fullProgram, args, env=cls.getEnviron(), cwd=cwd)
       else:
           fullProgram += args
-          subprocess.check_call(fullProgram, shell=True, cwd=cwd)
+          subprocess.call(fullProgram, shell=True, cwd=cwd)
 
   @classmethod
   def runRDKit2Script(cls, protocol, scriptName, args, cwd=None):
