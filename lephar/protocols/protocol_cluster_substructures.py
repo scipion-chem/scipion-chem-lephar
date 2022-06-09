@@ -41,7 +41,7 @@ oForm = 'mol2'
 class ProtChemClusterMCS(EMProtocol):
     """Perform a molecule structure clustering using CLusterByMCSbinary from LePhar
     http://www.lephar.com/software.htm"""
-    _label = 'LeDock molecule clustering'
+    _label = 'LePhar molecule clustering'
     _program = "ClusterByMCS"
 
     def _defineParams(self, form):
