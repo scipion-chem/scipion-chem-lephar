@@ -70,7 +70,7 @@ class Plugin(pwem.Plugin):
       for script in ['ClusterByMCS']:
           lephar_commands += 'wget {} && unzip {}.zip && rm {}.zip && '.format(cls.getZipUrl(script), script, script)
 
-      lephar_commands += 'conda create -y -n rdkit2-env rdkit=2018.09.3 python=2.7 && '
+      lephar_commands += 'conda create -c conda-forge -y -n rdkit2-env rdkit=2018.09.3 python=2.7 && '
       lephar_commands += 'cd .. && touch ' + LEPHAR_INSTALLED
       lephar_commands = [(lephar_commands, LEPHAR_INSTALLED)]
 
