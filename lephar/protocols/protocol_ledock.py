@@ -199,7 +199,7 @@ class ProtChemLeDock(EMProtocol):
 
     def renameDockFile(self, outFile):
         outBase = os.path.basename(outFile)
-        newBase = '{}_{}.pdb'.format(outBase.split('_')[0],
+        newBase = '{}{}.pdb'.format(outBase.split('dock')[0],
                                     int(outBase.split('dock')[-1].split('.')[0]))
         newFile = os.path.join(os.path.dirname(outFile), newBase)
         os.rename(outFile, newFile)
