@@ -63,13 +63,3 @@ class AddLePharFilter(VariableWizard):
                                          getattr(protocol, inputParams[2]).get())
           form.setVar(outputParam[0], inList + '{}) {}: {}\n'.format(num, label, descInfo))
 
-
-AddLePharFilter().addTarget(protocol=ProtChemFilterLigands,
-                            targets=['descriptor'],
-                            inputs=['descriptor', 'minDesc', 'maxDesc'],
-                            outputs=['filterList'])
-
-AddLePharFilter().addTarget(protocol=ProtChemFilterLigands,
-                            targets=['fGroup'],
-                            inputs=['fGroup', 'minFG', 'maxFG'],
-                            outputs=['filterList'])
