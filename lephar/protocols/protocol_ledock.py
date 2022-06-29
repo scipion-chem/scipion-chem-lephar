@@ -64,12 +64,12 @@ class ProtChemLeDock(EMProtocol):
                        help='Radius of the Autodock grid for the whole protein')
 
         #Docking on pockets
-        group.addParam('inputPockets', PointerParam, pointerClass="SetOfPockets",
+        group.addParam('inputPockets', PointerParam, pointerClass="SetOfStructROIs",
                       label='Input pockets:', condition='not wholeProt', allowsNull=True,
-                      help="The protein pockets to dock in")
-        group.addParam('pocketRadiusN', FloatParam, label='Grid radius vs pocket radius: ',
+                      help="The protein structural ROIs to dock in")
+        group.addParam('pocketRadiusN', FloatParam, label='Grid radius vs ROI radius: ',
                        condition='not wholeProt', default=1.1, allowsNull=False,
-                       help='The radius * n of each pocket will be used as grid radius')
+                       help='The radius * n of each structural ROI will be used as grid radius')
 
         group = form.addGroup('Docking')
         group.addParam('inputSmallMolecules', PointerParam, pointerClass="SetOfSmallMolecules",
@@ -174,9 +174,9 @@ class ProtChemLeDock(EMProtocol):
                 errors.append('You need to specify a radius. You may use the wizard to do so')
         else:
             if not self.inputPockets.get():
-                errors.append('You need to specify an input set of pockets')
+                errors.append('You need to specify an input set of StructROIs')
             elif not self.pocketRadiusN.get():
-                errors.append('You need to specify a radius coefficient to adjust the pocket radius.')
+                errors.append('You need to specify a radius coefficient to adjust the StructROIs radius.')
         return errors
 
     def _citations(self):
