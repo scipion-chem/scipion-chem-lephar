@@ -27,3 +27,4 @@
 from .protocol_ledock import *
 from .protocol_prepare_target import *
 from .protocol_cluster_substructures import *
+from .protocol_filter_ligands import *
