@@ -64,7 +64,7 @@ class ProtChemLeDock(EMProtocol):
                        help='Radius of the Autodock grid for the whole protein')
 
         #Docking on pockets
-        group.addParam('inputPockets', PointerParam, pointerClass="SetOfStructROIs",
+        group.addParam('inputStructROIs', PointerParam, pointerClass="SetOfStructROIs",
                       label='Input pockets:', condition='not wholeProt', allowsNull=True,
                       help="The protein structural ROIs to dock in")
         group.addParam('pocketRadiusN', FloatParam, label='Grid radius vs ROI radius: ',
@@ -91,7 +91,7 @@ class ProtChemLeDock(EMProtocol):
             dockId = self._insertFunctionStep('dockStep', prerequisites=[cId])
             dockSteps.append(dockId)
         else:
-            for pocket in self.inputPockets.get():
+            for pocket in self.inputStructROIs.get():
                 pocketDir = self.getOutputPocketDir(pocket)
                 os.mkdir(pocketDir)
                 dockId = self._insertFunctionStep('dockStep', pocket.clone(), prerequisites=[cId])
@@ -173,7 +173,7 @@ class ProtChemLeDock(EMProtocol):
             elif not self.radius.get():
                 errors.append('You need to specify a radius. You may use the wizard to do so')
         else:
-            if not self.inputPockets.get():
+            if not self.inputStructROIs.get():
                 errors.append('You need to specify an input set of StructROIs')
             elif not self.pocketRadiusN.get():
                 errors.append('You need to specify a radius coefficient to adjust the StructROIs radius.')
@@ -228,7 +228,7 @@ class ProtChemLeDock(EMProtocol):
         if self.wholeProt:
             return self.inputAtomStruct.get().getFileName()
         else:
-            return self.inputPockets.get().getProteinFile()
+            return self.inputStructROIs.get().getProteinFile()
 
     def getPreparedReceptorFile(self):
         return self._getExtraPath('pro.pdb')
