@@ -141,10 +141,12 @@ class ProtChemLeDock(EMProtocol):
 
     def dockStep(self, pocket=None, idx=None):
         oDir = self.getOutputPocketDir(pocket)
-        dockFile = self.writeDockInFile(pocket, idx=idx)
-        lephar_plugin.runLePhar(self, program=self._program, args=dockFile, cwd=oDir)
+        dockParamFile, ligList = self.writeDockInFile(pocket, idx=idx)
+        lephar_plugin.runLePhar(self, program=self._program, args=dockParamFile, cwd=oDir)
 
-        for dokFile in glob.glob(os.path.join(oDir, '*.dok')):
+        dockFiles = self.getDockFiles(ligList, oDir)
+
+        for dokFile in dockFiles:
             dokBase = os.path.basename(dokFile)
             dokRoot = dokBase.split('.')[0]
             dokDir = os.path.join(oDir, dokRoot)
@@ -205,6 +207,14 @@ class ProtChemLeDock(EMProtocol):
         return ['C6CP01555G']
       
 ########################### Utils functions ############################
+
+    def getDockFiles(self, ligListFile, pocketDir):
+        dockFiles = []
+        with open(self._getPath(ligListFile)) as f:
+            for line in f:
+                basename = line.strip().split('.')[0]
+                dockFiles.append(os.path.abspath(os.path.join(pocketDir, basename + '.dok')))
+        return dockFiles
 
     def getNBatches(self):
         if self.paralLigand.get():
@@ -305,7 +315,7 @@ class ProtChemLeDock(EMProtocol):
         with open(dockFile, 'w') as fIn:
             fIn.write(strIn)
 
-        return dockFile
+        return dockFile, localLigList
 
     def linkLocal(self, sourcePath, outDir):
         outFile = os.path.join(outDir, os.path.basename(sourcePath))
