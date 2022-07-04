@@ -32,7 +32,7 @@ from pyworkflow.protocol.params import PointerParam, IntParam, FloatParam, STEPS
 import pyworkflow.object as pwobj
 
 
-from pwchem.utils import runOpenBabel
+from pwchem.utils import runOpenBabel, removeNumberFromStr
 from pwchem.objects import SetOfSmallMolecules, SmallMolecule
 
 from lephar import Plugin as lephar_plugin
@@ -150,6 +150,7 @@ class ProtChemLeDock(EMProtocol):
                         newSmallMol.cleanObjId()
 
                         molFile = self.renameDockFile(os.path.join(outDir, outFile))
+                        molFile = self.correctMolFile(molFile)
                         newSmallMol._energy = pwobj.Float(self.parseEnergy(molFile))
                         newSmallMol.poseFile.set(molFile)
                         newSmallMol.setPoseId(molFile.split('_')[-1].split('.')[0])
@@ -204,6 +205,18 @@ class ProtChemLeDock(EMProtocol):
         newFile = os.path.join(os.path.dirname(outFile), newBase)
         os.rename(outFile, newFile)
         return newFile
+
+    def correctMolFile(self, molFile):
+        auxFile = self._getTmpPath(os.path.basename(molFile))
+        with open(molFile) as fIn:
+            with open(auxFile, 'w') as f:
+                for line in fIn:
+                    if line.startswith('ATOM'):
+                        atomSym = removeNumberFromStr(line.split()[2])
+                        line = line.strip() + '  1.00  0.00{}{}\n'.format(' '*11, atomSym)
+                    f.write(line)
+        os.rename(auxFile, molFile)
+        return molFile
 
     def getGridId(self, outDir):
         return outDir.split('_')[-1]
