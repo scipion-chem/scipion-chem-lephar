@@ -175,13 +175,14 @@ class ProtChemLeDock(EMProtocol):
                         molFile = self.renameDockFile(os.path.join(outDir, outFile))
                         molFile = self.correctMolFile(molFile)
                         newSmallMol._energy = pwobj.Float(self.parseEnergy(molFile))
-                        newSmallMol.poseFile.set(molFile)
-                        newSmallMol.setPoseId(molFile.split('_')[-1].split('.')[0])
-                        newSmallMol.gridId.set(gridId)
-                        newSmallMol.setMolClass('LeDock')
-                        newSmallMol.setDockId(self.getObjId())
+                        if os.path.getsize(molFile) > 0:
+                            newSmallMol.poseFile.set(molFile)
+                            newSmallMol.setPoseId(molFile.split('_')[-1].split('.')[0])
+                            newSmallMol.gridId.set(gridId)
+                            newSmallMol.setMolClass('LeDock')
+                            newSmallMol.setDockId(self.getObjId())
 
-                        outputSet.append(newSmallMol)
+                            outputSet.append(newSmallMol)
 
         outputSet.proteinFile.set(self.getOriginalReceptorFile())
         outputSet.setDocked(True)
