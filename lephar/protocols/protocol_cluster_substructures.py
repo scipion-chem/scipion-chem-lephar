@@ -146,17 +146,17 @@ class ProtChemClusterMCS(EMProtocol):
                 if clusterId in clusters:
                     num += 1
                     molFile = self.writeMol2File(smi, '{}_{}'.format(name, num))
-                    clusters[clusterId] += [SmallMolecule(smallMolFilename=molFile)]
+                    clusters[clusterId] += [SmallMolecule(smallMolFilename=molFile, molName='guess')]
                 else:
                     num = 1
                     molFile = self.writeMol2File(smi, '{}_{}'.format(name, num))
-                    clusters[clusterId] = [SmallMolecule(smallMolFilename=molFile)]
+                    clusters[clusterId] = [SmallMolecule(smallMolFilename=molFile, molName='guess')]
 
         return clusters
 
     def writeMol2File(self, smi, name):
         oFile = self._getExtraPath(name + '.' + oForm)
 
-        args = ' -:"{}" -o{} -O {} --gen3d'.format(smi, oForm, os.path.abspath(oFile))
+        args = ' -:"{}" -o{} -O {} '.format(smi, oForm, os.path.abspath(oFile))
         runOpenBabel(protocol=self, args=args, cwd=self._getExtraPath())
         return os.path.abspath(oFile)
