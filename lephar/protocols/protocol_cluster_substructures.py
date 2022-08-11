@@ -157,6 +157,6 @@ class ProtChemClusterMCS(EMProtocol):
     def writeMol2File(self, smi, name):
         oFile = self._getExtraPath(name + '.' + oForm)
 
-        args = ' -:"{}" -o{} -O {} --gen3d'.format(smi, oForm, os.path.abspath(oFile))
+        args = ' -:"{}" -o{} -O {} '.format(smi, oForm, os.path.abspath(oFile))
         runOpenBabel(protocol=self, args=args, cwd=self._getExtraPath())
         return os.path.abspath(oFile)
