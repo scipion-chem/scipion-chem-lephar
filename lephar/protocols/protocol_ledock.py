@@ -169,8 +169,7 @@ class ProtChemLeDock(EMProtocol):
                     inMol = inputMolDic[file]
                     for outFile in os.listdir(outDir):
                         newSmallMol = SmallMolecule()
-                        newSmallMol.copy(inMol)
-                        newSmallMol.cleanObjId()
+                        newSmallMol.copy(inMol, copyId=False)
 
                         molFile = self.renameDockFile(os.path.join(outDir, outFile))
                         molFile = self.correctMolFile(molFile)

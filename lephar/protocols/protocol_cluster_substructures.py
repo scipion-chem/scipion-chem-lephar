@@ -146,11 +146,11 @@ class ProtChemClusterMCS(EMProtocol):
                 if clusterId in clusters:
                     num += 1
                     molFile = self.writeMol2File(smi, '{}_{}'.format(name, num))
-                    clusters[clusterId] += [SmallMolecule(smallMolFilename=molFile)]
+                    clusters[clusterId] += [SmallMolecule(smallMolFilename=molFile, molName='guess')]
                 else:
                     num = 1
                     molFile = self.writeMol2File(smi, '{}_{}'.format(name, num))
-                    clusters[clusterId] = [SmallMolecule(smallMolFilename=molFile)]
+                    clusters[clusterId] = [SmallMolecule(smallMolFilename=molFile, molName='guess')]
 
         return clusters
 
