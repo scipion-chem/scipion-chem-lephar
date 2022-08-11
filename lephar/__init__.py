@@ -46,15 +46,31 @@ class Plugin(pwem.Plugin):
     """ Return and write a variable in the config file.
     """
     cls._defineEmVar(LEPHAR_DIC['home'], LEPHAR_DIC['name'] + '-' + LEPHAR_DIC['version'])
+    cls._defineVar("RDKIT2_ENV_ACTIVATION", 'conda activate rdkit2-env')
 
   @classmethod
   def defineBinaries(cls, env):
       '''Download LePhar binaries'''
       LEPHAR_INSTALLED = 'lephar_installed'
-      lephar_commands = 'mkdir bin && cd bin && '
+      lephar_commands = ''
+      if not os.path.exists(cls.getProgramHome(LEPHAR_DIC, path='bin')):
+          lephar_commands += 'mkdir bin && '
+      lephar_commands += 'cd bin && '
       for program in ['ledock', 'lepro', 'lewater', 'lefrag']:
           lephar_commands += 'wget {} && chmod +x {} && '.format(cls.getLePharUrl(program), cls.getProgramBin(program))
 
+      for eBin in ['QueryDB']:
+          lephar_commands += 'wget {} && unzip {}.zip && rm {}.zip && '.format(cls.getZipUrl(eBin), eBin, eBin)
+
+      if not os.path.exists(cls.getProgramHome(LEPHAR_DIC, path='scripts')):
+          lephar_commands += 'cd .. && mkdir scripts && cd scripts && '
+      else:
+          lephar_commands += 'cd ../scripts && '
+
+      for script in ['ClusterByMCS']:
+          lephar_commands += 'wget {} && unzip {}.zip && rm {}.zip && '.format(cls.getZipUrl(script), script, script)
+
+      lephar_commands += 'conda create -c conda-forge -y -n rdkit2-env rdkit=2018.09.3 python=2.7 && '
       lephar_commands += 'cd .. && touch ' + LEPHAR_INSTALLED
       lephar_commands = [(lephar_commands, LEPHAR_INSTALLED)]
 
@@ -64,18 +80,30 @@ class Plugin(pwem.Plugin):
                      default=True)
 
   @classmethod
-  def runLePhar(cls, protocol, program, args, cwd=None, runJob=True):
+  def runLePhar(cls, protocol, program, args, cwd=None, runJob=True, linuxSuf=True):
       """ Run LePhar command from a given protocol. """
-      fullProgram = cls.getProgramHome(LEPHAR_DIC, path='bin/{}'.format(cls.getProgramBin(program)))
+      fullProgram = cls.getProgramHome(LEPHAR_DIC, path='bin/{}'.format(cls.getProgramBin(program, linuxSuf)))
       if runJob:
           protocol.runJob(fullProgram, args, env=cls.getEnviron(), cwd=cwd)
       else:
           fullProgram += args
-          subprocess.call(fullProgram, shell=True, env=protocol._getEnviron(), cwd=cwd)
+          subprocess.call(fullProgram, shell=True, cwd=cwd)
 
-  @classmethod  # Test that
+  @classmethod
+  def runRDKit2Script(cls, protocol, scriptName, args, cwd=None):
+    """ Run rdkit command from a given protocol. """
+    scriptPath = cls.getProgramHome(LEPHAR_DIC, path='scripts/{}/{}.pyo'.format(scriptName, scriptName))
+    fullProgram = '%s %s && %s %s' % (cls.getCondaActivationCmd(), cls.getRDKit2EnvActivation(), 'python', scriptPath)
+    protocol.runJob(fullProgram, args, env=cls.getEnviron(), cwd=cwd)
+
+  @classmethod
   def getEnviron(cls):
     pass
+
+  @classmethod
+  def getRDKit2EnvActivation(cls):
+    activation = cls.getVar("RDKIT2_ENV_ACTIVATION")
+    return activation
 
   # ---------------------------------- Utils functions  -----------------------
   @classmethod
@@ -83,11 +111,21 @@ class Plugin(pwem.Plugin):
       '''Returns the url of the different lephar binaries'''
       return "http://www.lephar.com/download/{}_linux_x86".format(program)
 
+  @classmethod
+  def getZipUrl(cls, program):
+      return 'http://www.lephar.com/download/{}.zip'.format(program)
+
+
   # In use paths
   @classmethod
-  def getProgramHome(cls, programDic, path=''):
+  def getProgramHome(cls, programDic=None, path=''):
+    if not programDic:
+        programDic = LEPHAR_DIC
     return os.path.join(cls.getVar(programDic['home']), path)
   
   @classmethod
-  def getProgramBin(cls, program):
-      return program + '_linux_x86'
+  def getProgramBin(cls, program, linuxSuf=True):
+      if linuxSuf:
+          return program + '_linux_x86'
+      else:
+          return program

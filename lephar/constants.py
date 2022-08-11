@@ -43,3 +43,9 @@ Ligands list
 {}
 
 END'''
+
+DESC_CHOICES = ['HeavyAtomCount', 'MolLogP', 'NumHAcceptors', 'NumHDonors', 'NumHeteroatoms', 'NumRotatableBonds',
+                'NumChiralCenters', 'RingCount', 'NOCount', 'TPSA', 'FractionCSP3', 'NumAromaticRings',
+                'NumSaturatedRings', 'NumAliphaticRings', 'NumAromaticHeterocycles', 'NumSaturatedHeterocycles',
+                'NumAliphaticHeterocycles', 'NumAromaticCarbocycles', 'NumSaturatedCarbocycles',
+                'NumAliphaticCarbocycles']

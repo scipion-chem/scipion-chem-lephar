@@ -32,7 +32,7 @@ from pyworkflow.protocol.params import PointerParam, IntParam, FloatParam, STEPS
 import pyworkflow.object as pwobj
 
 
-from pwchem.utils import runOpenBabel
+from pwchem.utils import runOpenBabel, removeNumberFromStr
 from pwchem.objects import SetOfSmallMolecules, SmallMolecule
 
 from lephar import Plugin as lephar_plugin
@@ -64,12 +64,12 @@ class ProtChemLeDock(EMProtocol):
                        help='Radius of the Autodock grid for the whole protein')
 
         #Docking on pockets
-        group.addParam('inputPockets', PointerParam, pointerClass="SetOfPockets",
+        group.addParam('inputStructROIs', PointerParam, pointerClass="SetOfStructROIs",
                       label='Input pockets:', condition='not wholeProt', allowsNull=True,
-                      help="The protein pockets to dock in")
-        group.addParam('pocketRadiusN', FloatParam, label='Grid radius vs pocket radius: ',
+                      help="The protein structural ROIs to dock in")
+        group.addParam('pocketRadiusN', FloatParam, label='Grid radius vs ROI radius: ',
                        condition='not wholeProt', default=1.1, allowsNull=False,
-                       help='The radius * n of each pocket will be used as grid radius')
+                       help='The radius * n of each structural ROI will be used as grid radius')
 
         group = form.addGroup('Docking')
         group.addParam('inputSmallMolecules', PointerParam, pointerClass="SetOfSmallMolecules",
@@ -77,6 +77,11 @@ class ProtChemLeDock(EMProtocol):
                        help="Input set of small molecules to dock with LeDock")
         group.addParam('rmsTol', FloatParam, label='Cluster RMSD (A): ', default=1.0, expertLevel=LEVEL_ADVANCED,)
         group.addParam('gaRun', IntParam, label='Number of positions per ligand: ', default=10)
+
+        group.addParam('paralLigand', BooleanParam, label='Parallelize on ligands: ', default=False,
+                       help='Parallelize docking processes on ligand batches')
+        group.addParam('ligandBatches', IntParam, label='Batches ligands: ', default=2, condition='paralLigand',
+                       help='Number of batches of ligands to parallelize the docking')
 
         form.addParallelSection(threads=4, mpi=1)
 
@@ -88,14 +93,18 @@ class ProtChemLeDock(EMProtocol):
         if self.wholeProt:
             pocketDir = self.getOutputPocketDir()
             os.mkdir(pocketDir)
-            dockId = self._insertFunctionStep('dockStep', prerequisites=[cId])
+            nBatches = self.getNBatches()
+            for i in range(nBatches):
+                dockId = self._insertFunctionStep('dockStep', None, i, poprerequisites=[cId])
             dockSteps.append(dockId)
         else:
-            for pocket in self.inputPockets.get():
+            for pocket in self.inputStructROIs.get():
                 pocketDir = self.getOutputPocketDir(pocket)
                 os.mkdir(pocketDir)
-                dockId = self._insertFunctionStep('dockStep', pocket.clone(), prerequisites=[cId])
-                dockSteps.append(dockId)
+                nBatches = self.getNBatches()
+                for i in range(nBatches):
+                    dockId = self._insertFunctionStep('dockStep', pocket.clone(), i, prerequisites=[cId])
+                    dockSteps.append(dockId)
 
         self._insertFunctionStep('createOutputStep', prerequisites=dockSteps)
 
@@ -105,25 +114,39 @@ class ProtChemLeDock(EMProtocol):
                                 cwd=self._getExtraPath())
         #list of mol2 files for ligands. lefrag for dividing mol2 multiple files
         with open(self.getLigandListFile(), 'w') as fLig:
-            with open(self.getLigandListFile(base=True), 'w') as fLigBase:
-                for mol in self.inputSmallMolecules.get():
-                    molFile = mol.getFileName()
-                    if not molFile.endswith('.mol2'):
-                        inName, inExt = os.path.splitext(os.path.basename(molFile))
-                        oFile = os.path.abspath(os.path.join(self._getExtraPath(inName + '.pdb')))
+            nBatches = self.getNBatches()
+            lenBatch = (len(self.inputSmallMolecules.get()) // nBatches) + 1
+            iLig, iFile = 0, 0
+            for mol in self.inputSmallMolecules.get():
+                molFile = mol.getFileName()
+                if not molFile.endswith('.mol2'):
+                    inName, inExt = os.path.splitext(os.path.basename(molFile))
+                    oFile = os.path.abspath(os.path.join(self._getExtraPath(inName + '.mol2')))
 
-                        args = ' -i{} {} -opdb -O {}'.format(inExt[1:], os.path.abspath(molFile), oFile)
-                        runOpenBabel(protocol=self, args=args, cwd=self._getExtraPath())
-                        molFile = oFile
+                    args = ' -i{} {} -omol2 -O {}'.format(inExt[1:], os.path.abspath(molFile), oFile)
+                    runOpenBabel(protocol=self, args=args, cwd=self._getExtraPath())
+                    molFile = oFile
 
-                    fLig.write(molFile + '\n')
-                    fLigBase.write(os.path.basename(molFile) + '\n')
+                fLig.write(molFile + '\n')
+                if iLig == 0:
+                    fLigBase = open(self.getLigandListFile(base=True, idx=iFile), 'w')
 
-    def dockStep(self, pocket=None):
+                fLigBase.write(os.path.basename(molFile) + '\n')
+                iLig += 1
+                if iLig == lenBatch:
+                    fLigBase.close()
+                    iLig = 0
+                    iFile += 1
+
+
+    def dockStep(self, pocket=None, idx=None):
         oDir = self.getOutputPocketDir(pocket)
-        dockFile = self.writeDockInFile(pocket)
-        lephar_plugin.runLePhar(self, program=self._program, args=dockFile, cwd=oDir)
-        for dokFile in glob.glob(os.path.join(oDir, '*.dok')):
+        dockParamFile, ligList = self.writeDockInFile(pocket, idx=idx)
+        lephar_plugin.runLePhar(self, program=self._program, args=dockParamFile, cwd=oDir)
+
+        dockFiles = self.getDockFiles(ligList, oDir)
+
+        for dokFile in dockFiles:
             dokBase = os.path.basename(dokFile)
             dokRoot = dokBase.split('.')[0]
             dokDir = os.path.join(oDir, dokRoot)
@@ -146,17 +169,19 @@ class ProtChemLeDock(EMProtocol):
                     inMol = inputMolDic[file]
                     for outFile in os.listdir(outDir):
                         newSmallMol = SmallMolecule()
-                        newSmallMol.copy(inMol)
-                        newSmallMol.cleanObjId()
+                        newSmallMol.copy(inMol, copyId=False)
 
                         molFile = self.renameDockFile(os.path.join(outDir, outFile))
+                        molFile = self.correctMolFile(molFile)
                         newSmallMol._energy = pwobj.Float(self.parseEnergy(molFile))
-                        newSmallMol.poseFile.set(molFile)
-                        newSmallMol.gridId.set(gridId)
-                        newSmallMol.setMolClass('LeDock')
-                        newSmallMol.setDockId(self.getObjId())
+                        if os.path.getsize(molFile) > 0:
+                            newSmallMol.poseFile.set(molFile)
+                            newSmallMol.setPoseId(molFile.split('_')[-1].split('.')[0])
+                            newSmallMol.gridId.set(gridId)
+                            newSmallMol.setMolClass('LeDock')
+                            newSmallMol.setDockId(self.getObjId())
 
-                        outputSet.append(newSmallMol)
+                            outputSet.append(newSmallMol)
 
         outputSet.proteinFile.set(self.getOriginalReceptorFile())
         outputSet.setDocked(True)
@@ -172,16 +197,31 @@ class ProtChemLeDock(EMProtocol):
             elif not self.radius.get():
                 errors.append('You need to specify a radius. You may use the wizard to do so')
         else:
-            if not self.inputPockets.get():
-                errors.append('You need to specify an input set of pockets')
+            if not self.inputStructROIs.get():
+                errors.append('You need to specify an input set of StructROIs')
             elif not self.pocketRadiusN.get():
-                errors.append('You need to specify a radius coefficient to adjust the pocket radius.')
+                errors.append('You need to specify a radius coefficient to adjust the StructROIs radius.')
         return errors
 
     def _citations(self):
         return ['C6CP01555G']
       
 ########################### Utils functions ############################
+
+    def getDockFiles(self, ligListFile, pocketDir):
+        dockFiles = []
+        with open(self._getPath(ligListFile)) as f:
+            for line in f:
+                basename = line.strip().split('.')[0]
+                dockFiles.append(os.path.abspath(os.path.join(pocketDir, basename + '.dok')))
+        return dockFiles
+
+    def getNBatches(self):
+        if self.paralLigand.get():
+            nBatches = self.ligandBatches.get()
+        else:
+            nBatches = 1
+        return nBatches
 
     def parseEnergy(self, molFile):
         with open(molFile) as fMol:
@@ -198,11 +238,23 @@ class ProtChemLeDock(EMProtocol):
 
     def renameDockFile(self, outFile):
         outBase = os.path.basename(outFile)
-        newBase = '{}_{}.pdb'.format(outBase.split('_')[0],
+        newBase = '{}{}.pdb'.format(outBase.split('dock')[0],
                                     int(outBase.split('dock')[-1].split('.')[0]))
         newFile = os.path.join(os.path.dirname(outFile), newBase)
         os.rename(outFile, newFile)
         return newFile
+
+    def correctMolFile(self, molFile):
+        auxFile = self._getTmpPath(os.path.basename(molFile))
+        with open(molFile) as fIn:
+            with open(auxFile, 'w') as f:
+                for line in fIn:
+                    if line.startswith('ATOM'):
+                        atomSym = removeNumberFromStr(line.split()[2])
+                        line = line.strip() + '  1.00  0.00{}{}\n'.format(' '*11, atomSym)
+                    f.write(line)
+        os.rename(auxFile, molFile)
+        return molFile
 
     def getGridId(self, outDir):
         return outDir.split('_')[-1]
@@ -227,18 +279,19 @@ class ProtChemLeDock(EMProtocol):
         if self.wholeProt:
             return self.inputAtomStruct.get().getFileName()
         else:
-            return self.inputPockets.get().getProteinFile()
+            return self.inputStructROIs.get().getProteinFile()
 
     def getPreparedReceptorFile(self):
         return self._getExtraPath('pro.pdb')
 
-    def getLigandListFile(self, base=False):
+    def getLigandListFile(self, base=False, idx=None):
         if not base:
             return os.path.abspath(self._getPath('ligands.list'))
         else:
-            return os.path.abspath(self._getPath('ligandsBase.list'))
+            return os.path.abspath(self._getPath('ligandsBase_{}.list'.format(idx)))
+            
 
-    def writeDockInFile(self, pocket):
+    def writeDockInFile(self, pocket, idx):
         pDir = self.getOutputPocketDir(pocket)
         if not self.wholeProt:
             x_center, y_center, z_center = pocket.calculateMassCenter()
@@ -253,26 +306,28 @@ class ProtChemLeDock(EMProtocol):
         zmin, zmax = z_center - r, z_center + r
 
         localReceptor = self.linkLocal(os.path.abspath(self.getPreparedReceptorFile()), pDir)
-        localLigList = self.doLocalLig(pDir)
+        localLigList = self.doLocalLig(pDir, idx)
 
-        strIn = DOCK_IN.format(localReceptor, self.rmsTol.get(),
-                               xmin, xmax, ymin, ymax, zmin, zmax,
+        strIn = DOCK_IN.format(localReceptor, self.rmsTol.get(), xmin, xmax, ymin, ymax, zmin, zmax,
                                self.gaRun.get(), localLigList)
 
-        dockFile = os.path.abspath(os.path.join(pDir, 'dock.in'))
+        dockFile = os.path.abspath(os.path.join(pDir, 'dock_{}.in'.format(idx)))
         with open(dockFile, 'w') as fIn:
             fIn.write(strIn)
-        return dockFile
+
+        return dockFile, localLigList
 
     def linkLocal(self, sourcePath, outDir):
-        os.symlink(sourcePath, os.path.join(outDir, os.path.basename(sourcePath)))
+        outFile = os.path.join(outDir, os.path.basename(sourcePath))
+        if not os.path.exists(outFile):
+            os.symlink(sourcePath, outFile)
         return os.path.basename(sourcePath)
 
-    def doLocalLig(self, outDir):
+    def doLocalLig(self, outDir, idx=0):
         with open(self.getLigandListFile()) as fIn:
             for molFile in fIn:
                 self.linkLocal(molFile.strip(), outDir)
 
-        return self.linkLocal(self.getLigandListFile(base=True), outDir)
+        return self.linkLocal(self.getLigandListFile(base=True, idx=idx), outDir)
 
 
