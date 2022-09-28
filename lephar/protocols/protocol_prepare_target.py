@@ -30,7 +30,7 @@ from pwem.protocols import EMProtocol
 from pwem.objects import AtomStruct
 from pyworkflow.protocol.params import PointerParam, BooleanParam, StringParam
 
-from pwchem.utils import clean_PDB
+from pwchem.utils import clean_PDB, removeNumberFromStr
 
 from lephar import Plugin as lephar_plugin
 
@@ -93,7 +93,8 @@ class ProtChemLePro(EMProtocol):
 
     def createOutputStep(self):
         outFileName = self._getPath(self._getInputName() + '_prep.pdb')
-        shutil.copy(self._getExtraPath('pro.pdb'), outFileName)
+        os.rename(self._getExtraPath('pro.pdb'), outFileName)
+        self.addPDBColumns(outFileName)
         outAS = AtomStruct(outFileName)
         self._defineOutputs(outputStructure=outAS)
 
@@ -101,3 +102,15 @@ class ProtChemLePro(EMProtocol):
 
     def _getInputName(self):
         return os.path.splitext(os.path.basename(self.inputAtomStruct.get().getFileName()))[0]
+
+    def addPDBColumns(self, pdbFile):
+        auxFile = self._getTmpPath(os.path.basename(pdbFile))
+        with open(pdbFile) as fIn:
+            with open(auxFile, 'w') as f:
+                for line in fIn:
+                    if line.startswith('ATOM'):
+                        atomSym = removeNumberFromStr(line.split()[2])
+                        line = line.strip() + '  1.00  0.00{}{}\n'.format(' '*11, atomSym)
+                    f.write(line)
+        os.rename(auxFile, pdbFile)
+        return pdbFile
