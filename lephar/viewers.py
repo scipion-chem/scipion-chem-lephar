@@ -28,4 +28,4 @@ from pwchem.viewers import SmallMoleculesViewer
 from lephar.protocols import *
 
 
-SmallMoleculesViewer._targets.append(ProtChemClusterMCS)
+#SmallMoleculesViewer._targets.append(ProtChemClusterMCS)

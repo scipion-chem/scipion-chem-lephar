@@ -233,7 +233,7 @@ class ProtChemLeDock(EMProtocol):
     def getInputMolsDic(self):
         dic = {}
         for mol in self.inputSmallMolecules.get():
-            dic[mol.clone().getMolName()] = mol.clone()
+            dic[mol.clone().getUniqueName(False, True, False, False)] = mol.clone()
         return dic
 
     def renameDockFile(self, outFile):
