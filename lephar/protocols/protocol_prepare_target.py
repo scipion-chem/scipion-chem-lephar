@@ -24,13 +24,13 @@
 # *
 # **************************************************************************
 
-import os, shutil, json
+import os
 
 from pwem.protocols import EMProtocol
 from pwem.objects import AtomStruct
 from pyworkflow.protocol.params import PointerParam, BooleanParam, StringParam
 
-from pwchem.utils import clean_PDB, removeNumberFromStr
+from pwchem.utils import clean_PDB, removeNumberFromStr, getChainIds
 
 from lephar import Plugin as lephar_plugin
 
@@ -78,12 +78,7 @@ class ProtChemLePro(EMProtocol):
 
         chain_ids = None
         if self.rchains.get():
-            chainJson = json.loads(self.chain_name.get())  # From wizard dictionary
-            if 'chain' in chainJson:
-                chain_ids = [chainJson["chain"].upper().strip()]
-            elif 'model-chain' in chainJson:
-                modelChains = chainJson["model-chain"].upper().strip()
-                chain_ids = [x.split('-')[1] for x in modelChains.split(',')]
+            chain_ids = getChainIds(self.chain_name.get())
 
         cleanedPDB = clean_PDB(self.inputAtomStruct.get().getFileName(), fnPdb,
                                False, self.HETATM.get(), chain_ids)
