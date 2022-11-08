@@ -166,7 +166,7 @@ class ProtChemLeDock(EMProtocol):
             for file in os.listdir(pocketDir):
                 outDir = os.path.join(pocketDir, file)
                 if os.path.isdir(outDir):
-                    inMol = inputMolDic[file]
+                    inMol = inputMolDic[file.split('.')[0].split('-')[0]]
                     for outFile in os.listdir(outDir):
                         newSmallMol = SmallMolecule()
                         newSmallMol.copy(inMol, copyId=False)
