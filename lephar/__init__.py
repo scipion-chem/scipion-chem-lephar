@@ -32,7 +32,7 @@ manipulation of atomic struct objects
 import os, subprocess
 import pwem
 
-_logo = 'logo.jpg'
+_logo = 'lephar_logo.jpg'
 LEPHAR_DIC = {'name': 'lephar', 'version': '1.0', 'home': 'LEPHAR_HOME'}
 
 

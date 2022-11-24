@@ -30,7 +30,41 @@ from ..protocols import ProtChemLePro, ProtChemLeDock
 from pwchem.protocols import ProtChemImportSmallMolecules, ProtChemOBabelPrepareLigands, ProtDefineStructROIs
 
 
-class TestLeDock(BaseTest):
+class TestLePro(BaseTest):
+    @classmethod
+    def setUpClass(cls):
+        cls.ds = DataSet.getDataSet('model_building_tutorial')
+        setupTestProject(cls)
+        cls._runImportPDB()
+        cls._waitOutput(cls.protImportPDB, 'outputPdb', sleepTime=5)
+
+    @classmethod
+    def _runImportPDB(cls):
+        cls.protImportPDB = cls.newProtocol(
+            ProtImportPdb,
+            inputPdbData=0,
+            pdbId='5ni1')
+        cls.proj.launchProtocol(cls.protImportPDB, wait=False)
+
+    @classmethod
+    def _runPrepareReceptorLePro(cls):
+        cls.protPrepareReceptor = cls.newProtocol(
+            ProtChemLePro,
+            inputAtomStruct=cls.protImportPDB.outputPdb,
+            HETATM=True, rchains=True,
+            chain_name='{"model": 0, "chain": "C", "residues": 141}',
+            repair=3)
+
+        cls.launchProtocol(cls.protPrepareReceptor)
+
+    def test(self):
+        self._runPrepareReceptorLePro()
+
+        self._waitOutput(self.protPrepareReceptor, 'outputStructure', sleepTime=10)
+        self.assertIsNotNone(getattr(self.protPrepareReceptor, 'outputStructure', None))
+
+
+class TestLeDock(TestLePro):
     @classmethod
     def setUpClass(cls):
         cls.ds = DataSet.getDataSet('model_building_tutorial')
@@ -55,14 +89,6 @@ class TestLeDock(BaseTest):
         cls.proj.launchProtocol(cls.protImportSmallMols, wait=False)
 
     @classmethod
-    def _runImportPDB(cls):
-        cls.protImportPDB = cls.newProtocol(
-            ProtImportPdb,
-            inputPdbData=0,
-            pdbId='5ni1')
-        cls.proj.launchProtocol(cls.protImportPDB, wait=False)
-
-    @classmethod
     def _runPrepareLigandsOBabel(cls):
         cls.protOBabel = cls.newProtocol(
             ProtChemOBabelPrepareLigands,
@@ -72,17 +98,6 @@ class TestLeDock(BaseTest):
             rmsd_cutoff=0.375)
 
         cls.proj.launchProtocol(cls.protOBabel, wait=False)
-
-    @classmethod
-    def _runPrepareReceptorLePro(cls):
-        cls.protPrepareReceptor = cls.newProtocol(
-            ProtChemLePro,
-            inputAtomStruct=cls.protImportPDB.outputPdb,
-            HETATM=True, rchains=True,
-            chain_name='{"model": 0, "chain": "C", "residues": 141}',
-            repair=3)
-
-        cls.launchProtocol(cls.protPrepareReceptor)
 
     @classmethod
     def _runPocketsSearch(cls):
@@ -118,7 +133,7 @@ class TestLeDock(BaseTest):
 
         return protAutoDock
 
-    def testLeDock(self):
+    def test(self):
         print('Docking with LeDock in the whole protein')
         protLeDock1 = self._runLeDock()
 

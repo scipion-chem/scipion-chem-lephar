@@ -33,7 +33,7 @@ setup(
     install_requires=[requirements],
     include_package_data=True,
     package_data={
-       'lephar': ['logo.jpg', 'protocols.conf'],
+       'lephar': ['lephar_logo.jpg', 'protocols.conf'],
     },
     entry_points={
         'pyworkflow.plugin': 'lephar = lephar'

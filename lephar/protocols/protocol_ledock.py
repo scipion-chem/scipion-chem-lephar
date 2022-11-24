@@ -75,8 +75,10 @@ class ProtChemLeDock(EMProtocol):
         group.addParam('inputSmallMolecules', PointerParam, pointerClass="SetOfSmallMolecules",
                        label='Ligand library: ', allowsNull=False,
                        help="Input set of small molecules to dock with LeDock")
-        group.addParam('rmsTol', FloatParam, label='Cluster RMSD (A): ', default=1.0, expertLevel=LEVEL_ADVANCED,)
-        group.addParam('gaRun', IntParam, label='Number of positions per ligand: ', default=10)
+        group.addParam('rmsTol', FloatParam, label='Cluster RMSD (A): ', default=1.0, expertLevel=LEVEL_ADVANCED,
+                       help='RMSD threshold for discarding too similar docking poses')
+        group.addParam('gaRun', IntParam, label='Number of positions per ligand: ', default=10,
+                       help='Maximum number of poses to output per ligand per StructROI')
 
         group.addParam('paralLigand', BooleanParam, label='Parallelize on ligands: ', default=False,
                        help='Parallelize docking processes on ligand batches')
@@ -166,7 +168,7 @@ class ProtChemLeDock(EMProtocol):
             for file in os.listdir(pocketDir):
                 outDir = os.path.join(pocketDir, file)
                 if os.path.isdir(outDir):
-                    inMol = inputMolDic[file.split('.')[0].split('-')[0]]
+                    inMol = inputMolDic[file.split('.')[0]]
                     for outFile in os.listdir(outDir):
                         newSmallMol = SmallMolecule()
                         newSmallMol.copy(inMol, copyId=False)
