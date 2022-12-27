@@ -77,7 +77,7 @@ class ProtChemLeDock(EMProtocol):
                        help="Input set of small molecules to dock with LeDock")
         group.addParam('rmsTol', FloatParam, label='Cluster RMSD (A): ', default=1.0, expertLevel=LEVEL_ADVANCED,
                        help='RMSD threshold for discarding too similar docking poses')
-        group.addParam('gaRun', IntParam, label='Number of positions per ligand: ', default=10,
+        group.addParam('nRuns', IntParam, label='Number of positions per ligand: ', default=10,
                        help='Maximum number of poses to output per ligand per StructROI')
 
         group.addParam('paralLigand', BooleanParam, label='Parallelize on ligands: ', default=False,
@@ -120,7 +120,7 @@ class ProtChemLeDock(EMProtocol):
             lenBatch = (len(self.inputSmallMolecules.get()) // nBatches) + 1
             iLig, iFile = 0, 0
             for mol in self.inputSmallMolecules.get():
-                molFile = mol.getFileName()
+                molFile = os.path.abspath(mol.getFileName())
                 if not molFile.endswith('.mol2'):
                     inName, inExt = os.path.splitext(os.path.basename(molFile))
                     oFile = os.path.abspath(os.path.join(self._getExtraPath(inName + '.mol2')))
@@ -311,7 +311,7 @@ class ProtChemLeDock(EMProtocol):
         localLigList = self.doLocalLig(pDir, idx)
 
         strIn = DOCK_IN.format(localReceptor, self.rmsTol.get(), xmin, xmax, ymin, ymax, zmin, zmax,
-                               self.gaRun.get(), localLigList)
+                               self.nRuns.get(), localLigList)
 
         dockFile = os.path.abspath(os.path.join(pDir, 'dock_{}.in'.format(idx)))
         with open(dockFile, 'w') as fIn:

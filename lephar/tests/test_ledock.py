@@ -117,7 +117,7 @@ class TestLeDock(TestLePro):
                 wholeProt=True,
                 inputAtomStruct=self.protPrepareReceptor.outputStructure,
                 inputSmallMolecules=self.protOBabel.outputSmallMolecules,
-                radius=24, gaRun=2,
+                radius=24, nRuns=2,
                 numberOfThreads=8)
             self.proj.launchProtocol(protAutoDock, wait=False)
 
@@ -127,7 +127,7 @@ class TestLeDock(TestLePro):
                 wholeProt=False,
                 inputStructROIs=pocketsProt.outputStructROIs,
                 inputSmallMolecules=self.protOBabel.outputSmallMolecules,
-                pocketRadiusN=5, gaRun=2,
+                pocketRadiusN=5, nRuns=2,
                 numberOfThreads=4)
             self.proj.launchProtocol(protAutoDock, wait=False)
 
