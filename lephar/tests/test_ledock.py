@@ -93,7 +93,7 @@ class TestLeDock(TestLePro):
         cls.protOBabel = cls.newProtocol(
             ProtChemOBabelPrepareLigands,
             inputType=0, method_charges=0,
-            inputSmallMols=cls.protImportSmallMols.outputSmallMolecules,
+            inputSmallMolecules=cls.protImportSmallMols.outputSmallMolecules,
             doConformers=True, method_conf=0, number_conf=2,
             rmsd_cutoff=0.375)
 
