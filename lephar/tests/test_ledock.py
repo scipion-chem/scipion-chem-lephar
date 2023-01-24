@@ -104,8 +104,8 @@ class TestLeDock(TestLePro):
         cls.protDefPockets = cls.newProtocol(
             ProtDefineStructROIs,
             inputAtomStruct=cls.protPrepareReceptor.outputStructure,
-            inResidues='{"model": 0, "chain": "C", "index": "58-58", "residues": "H"}\n'
-                       '{"model": 0, "chain": "C", "index": "101-101", "residues": "L"}\n')
+            inROIs='1) Residues: {"model": 0, "chain": "C", "index": "58-58", "residues": ""}\n'
+                   '2) Residues: {"model": 0, "chain": "C", "index": "101-101", "residues": "L"}\n')
 
         cls.proj.launchProtocol(cls.protDefPockets, wait=False)
         return cls.protDefPockets
