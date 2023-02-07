@@ -32,7 +32,7 @@ from pyworkflow.protocol.params import PointerParam, IntParam, FloatParam, STEPS
 import pyworkflow.object as pwobj
 
 
-from pwchem.utils import runOpenBabel, removeNumberFromStr
+from pwchem.utils import runOpenBabel, removeNumberFromStr, performBatchThreading
 from pwchem.objects import SetOfSmallMolecules, SmallMolecule
 
 from lephar import Plugin as lephar_plugin
@@ -161,6 +161,15 @@ class ProtChemLeDock(EMProtocol):
             os.remove(newDockFile)
 
     def createOutputStep(self):
+        allFiles = []
+        for pocketDir in self.getPocketDirs():
+            for file in os.listdir(pocketDir):
+                outDir = os.path.join(pocketDir, file)
+                if os.path.isdir(outDir):
+                    for outFile in os.listdir(outDir):
+                        allFiles.append(os.path.join(outDir, outFile))
+        performBatchThreading(self.correctMolFile, allFiles, self.numberOfThreads.get(), cloneItem=False)
+
         inputMolDic = self.getInputMolsDic()
         outputSet = SetOfSmallMolecules().create(outputPath=self._getPath())
         for pocketDir in self.getPocketDirs():
@@ -173,8 +182,7 @@ class ProtChemLeDock(EMProtocol):
                         newSmallMol = SmallMolecule()
                         newSmallMol.copy(inMol, copyId=False)
 
-                        molFile = self.renameDockFile(os.path.join(outDir, outFile))
-                        molFile = self.correctMolFile(molFile)
+                        molFile = os.path.join(outDir, outFile)
                         newSmallMol._energy = pwobj.Float(self.parseEnergy(molFile))
                         if os.path.getsize(molFile) > 0:
                             newSmallMol.poseFile.set(molFile)
@@ -243,20 +251,19 @@ class ProtChemLeDock(EMProtocol):
         newBase = '{}{}.pdb'.format(outBase.split('dock')[0],
                                     int(outBase.split('dock')[-1].split('.')[0]))
         newFile = os.path.join(os.path.dirname(outFile), newBase)
-        os.rename(outFile, newFile)
         return newFile
 
-    def correctMolFile(self, molFile):
-        auxFile = self._getTmpPath(os.path.basename(molFile))
-        with open(molFile) as fIn:
-            with open(auxFile, 'w') as f:
-                for line in fIn:
-                    if line.startswith('ATOM'):
-                        atomSym = removeNumberFromStr(line.split()[2])
-                        line = line.strip() + '  1.00  0.00{}{}\n'.format(' '*11, atomSym)
-                    f.write(line)
-        os.rename(auxFile, molFile)
-        return molFile
+    def correctMolFile(self, molFiles, molsLists, it):
+        for molFile in molFiles:
+            newFile = self.renameDockFile(molFile)
+            with open(molFile) as fIn:
+                with open(newFile, 'w') as f:
+                    for line in fIn:
+                        if line.startswith('ATOM'):
+                            atomSym = removeNumberFromStr(line.split()[2])
+                            line = line.strip() + '  1.00  0.00{}{}\n'.format(' '*(12-len(atomSym)), atomSym)
+                        f.write(line)
+            os.remove(molFile)
 
     def getGridId(self, outDir):
         return outDir.split('_')[-1]
