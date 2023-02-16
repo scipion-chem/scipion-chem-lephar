@@ -1,6 +1,6 @@
 # **************************************************************************
 # *
-# * Authors:    Alberto M. Parra Pérez (amparraperez@gmail.com)
+# * Authors:     Daniel Del Hoyo Gomez (ddelhoyo@cnb.csic.es)
 # *
 # * Unidad de  Bioinformatica of Centro Nacional de Biotecnologia , CSIC
 # *
@@ -23,3 +23,5 @@
 # *  e-mail address 'scipion@cnb.csic.es'
 # *
 # **************************************************************************
+
+from lephar.tests.test_ledock import *

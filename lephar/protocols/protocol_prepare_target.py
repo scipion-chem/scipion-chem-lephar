@@ -24,12 +24,13 @@
 # *
 # **************************************************************************
 
-import os, shutil
+import os
 
 from pwem.protocols import EMProtocol
-from pwem.convert.atom_struct import toPdb
 from pwem.objects import AtomStruct
-from pyworkflow.protocol.params import PointerParam
+from pyworkflow.protocol.params import PointerParam, BooleanParam, StringParam
+
+from pwchem.utils import clean_PDB, removeNumberFromStr, getChainIds
 
 from lephar import Plugin as lephar_plugin
 
@@ -48,21 +49,47 @@ class ProtChemLePro(EMProtocol):
                        label='Input atomic structure:',
                        help="The atom structure to be prepared")
 
+        clean = form.addGroup('Clean Structure File')
+        clean.addParam("HETATM", BooleanParam,
+                       label='Remove ligands HETATM',
+                       default=True, important=True,
+                       help='Remove all ligands and HETATM contained in the protein')
+
+        clean.addParam("rchains", BooleanParam,
+                       label='Select specific chains: ',
+                       default=False, important=True,
+                       help='Keep only the chains selected')
+
+        clean.addParam("chain_name", StringParam,
+                       label="Keep chains: ", important=True,
+                       condition="rchains==True",
+                       help="Select the chain(s) you want to keep in the structure")
+
     # --------------------------- INSERT steps functions --------------------
     def _insertAllSteps(self):
         self._insertFunctionStep('preparationStep')
         self._insertFunctionStep('createOutputStep')
 
     def preparationStep(self):
-        inpStructFile = self.inputAtomStruct.get().getFileName()
-        inpPDBFile = toPdb(inpStructFile, self._getExtraPath(self._getInputName() + '.pdb'))
+        # Clean PDB
+        pdb_ini = self.inputAtomStruct.get().getFileName()
+        filename = os.path.splitext(os.path.basename(pdb_ini))[0]
+        fnPdb = self._getExtraPath('%s_clean.pdb' % filename)
 
-        args = os.path.abspath(inpPDBFile)
+        chain_ids = None
+        if self.rchains.get():
+            chain_ids = getChainIds(self.chain_name.get())
+
+        cleanedPDB = clean_PDB(self.inputAtomStruct.get().getFileName(), fnPdb,
+                               False, self.HETATM.get(), chain_ids)
+
+        args = os.path.abspath(cleanedPDB)
         lephar_plugin.runLePhar(self, program=self._program, args=args, cwd=self._getExtraPath())
 
     def createOutputStep(self):
         outFileName = self._getPath(self._getInputName() + '_prep.pdb')
-        shutil.copy(self._getExtraPath('pro.pdb'), outFileName)
+        os.rename(self._getExtraPath('pro.pdb'), outFileName)
+        self.addPDBColumns(outFileName)
         outAS = AtomStruct(outFileName)
         self._defineOutputs(outputStructure=outAS)
 
@@ -70,3 +97,15 @@ class ProtChemLePro(EMProtocol):
 
     def _getInputName(self):
         return os.path.splitext(os.path.basename(self.inputAtomStruct.get().getFileName()))[0]
+
+    def addPDBColumns(self, pdbFile):
+        auxFile = self._getTmpPath(os.path.basename(pdbFile))
+        with open(pdbFile) as fIn:
+            with open(auxFile, 'w') as f:
+                for line in fIn:
+                    if line.startswith('ATOM'):
+                        atomSym = removeNumberFromStr(line.split()[2])
+                        line = line.strip() + '  1.00  0.00{}{}\n'.format(' '*11, atomSym)
+                    f.write(line)
+        os.rename(auxFile, pdbFile)
+        return pdbFile

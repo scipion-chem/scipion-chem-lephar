@@ -32,7 +32,7 @@ from pyworkflow.protocol.params import PointerParam, IntParam, FloatParam, STEPS
 import pyworkflow.object as pwobj
 
 
-from pwchem.utils import runOpenBabel, removeNumberFromStr
+from pwchem.utils import runOpenBabel, removeNumberFromStr, performBatchThreading
 from pwchem.objects import SetOfSmallMolecules, SmallMolecule
 
 from lephar import Plugin as lephar_plugin
@@ -75,8 +75,10 @@ class ProtChemLeDock(EMProtocol):
         group.addParam('inputSmallMolecules', PointerParam, pointerClass="SetOfSmallMolecules",
                        label='Ligand library: ', allowsNull=False,
                        help="Input set of small molecules to dock with LeDock")
-        group.addParam('rmsTol', FloatParam, label='Cluster RMSD (A): ', default=1.0, expertLevel=LEVEL_ADVANCED,)
-        group.addParam('gaRun', IntParam, label='Number of positions per ligand: ', default=10)
+        group.addParam('rmsTol', FloatParam, label='Cluster RMSD (A): ', default=1.0, expertLevel=LEVEL_ADVANCED,
+                       help='RMSD threshold for discarding too similar docking poses')
+        group.addParam('nRuns', IntParam, label='Number of positions per ligand: ', default=10,
+                       help='Maximum number of poses to output per ligand per StructROI')
 
         group.addParam('paralLigand', BooleanParam, label='Parallelize on ligands: ', default=False,
                        help='Parallelize docking processes on ligand batches')
@@ -118,7 +120,7 @@ class ProtChemLeDock(EMProtocol):
             lenBatch = (len(self.inputSmallMolecules.get()) // nBatches) + 1
             iLig, iFile = 0, 0
             for mol in self.inputSmallMolecules.get():
-                molFile = mol.getFileName()
+                molFile = os.path.abspath(mol.getFileName())
                 if not molFile.endswith('.mol2'):
                     inName, inExt = os.path.splitext(os.path.basename(molFile))
                     oFile = os.path.abspath(os.path.join(self._getExtraPath(inName + '.mol2')))
@@ -159,6 +161,15 @@ class ProtChemLeDock(EMProtocol):
             os.remove(newDockFile)
 
     def createOutputStep(self):
+        allFiles = []
+        for pocketDir in self.getPocketDirs():
+            for file in os.listdir(pocketDir):
+                outDir = os.path.join(pocketDir, file)
+                if os.path.isdir(outDir):
+                    for outFile in os.listdir(outDir):
+                        allFiles.append(os.path.join(outDir, outFile))
+        performBatchThreading(self.correctMolFile, allFiles, self.numberOfThreads.get(), cloneItem=False)
+
         inputMolDic = self.getInputMolsDic()
         outputSet = SetOfSmallMolecules().create(outputPath=self._getPath())
         for pocketDir in self.getPocketDirs():
@@ -166,13 +177,12 @@ class ProtChemLeDock(EMProtocol):
             for file in os.listdir(pocketDir):
                 outDir = os.path.join(pocketDir, file)
                 if os.path.isdir(outDir):
-                    inMol = inputMolDic[file]
+                    inMol = inputMolDic[file.split('.')[0]]
                     for outFile in os.listdir(outDir):
                         newSmallMol = SmallMolecule()
                         newSmallMol.copy(inMol, copyId=False)
 
-                        molFile = self.renameDockFile(os.path.join(outDir, outFile))
-                        molFile = self.correctMolFile(molFile)
+                        molFile = os.path.join(outDir, outFile)
                         newSmallMol._energy = pwobj.Float(self.parseEnergy(molFile))
                         if os.path.getsize(molFile) > 0:
                             newSmallMol.poseFile.set(molFile)
@@ -233,7 +243,7 @@ class ProtChemLeDock(EMProtocol):
     def getInputMolsDic(self):
         dic = {}
         for mol in self.inputSmallMolecules.get():
-            dic[mol.clone().getMolName()] = mol.clone()
+            dic[mol.clone().getUniqueName(False, True, False, False)] = mol.clone()
         return dic
 
     def renameDockFile(self, outFile):
@@ -241,20 +251,19 @@ class ProtChemLeDock(EMProtocol):
         newBase = '{}{}.pdb'.format(outBase.split('dock')[0],
                                     int(outBase.split('dock')[-1].split('.')[0]))
         newFile = os.path.join(os.path.dirname(outFile), newBase)
-        os.rename(outFile, newFile)
         return newFile
 
-    def correctMolFile(self, molFile):
-        auxFile = self._getTmpPath(os.path.basename(molFile))
-        with open(molFile) as fIn:
-            with open(auxFile, 'w') as f:
-                for line in fIn:
-                    if line.startswith('ATOM'):
-                        atomSym = removeNumberFromStr(line.split()[2])
-                        line = line.strip() + '  1.00  0.00{}{}\n'.format(' '*11, atomSym)
-                    f.write(line)
-        os.rename(auxFile, molFile)
-        return molFile
+    def correctMolFile(self, molFiles, molsLists, it):
+        for molFile in molFiles:
+            newFile = self.renameDockFile(molFile)
+            with open(molFile) as fIn:
+                with open(newFile, 'w') as f:
+                    for line in fIn:
+                        if line.startswith('ATOM'):
+                            atomSym = removeNumberFromStr(line.split()[2])
+                            line = line.strip() + '  1.00  0.00{}{}\n'.format(' '*(12-len(atomSym)), atomSym)
+                        f.write(line)
+            os.remove(molFile)
 
     def getGridId(self, outDir):
         return outDir.split('_')[-1]
@@ -309,7 +318,7 @@ class ProtChemLeDock(EMProtocol):
         localLigList = self.doLocalLig(pDir, idx)
 
         strIn = DOCK_IN.format(localReceptor, self.rmsTol.get(), xmin, xmax, ymin, ymax, zmin, zmax,
-                               self.gaRun.get(), localLigList)
+                               self.nRuns.get(), localLigList)
 
         dockFile = os.path.abspath(os.path.join(pDir, 'dock_{}.in'.format(idx)))
         with open(dockFile, 'w') as fIn:

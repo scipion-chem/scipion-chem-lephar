@@ -32,12 +32,16 @@ to select the radius of the sphere that contains the protein or a desired zone.
 """
 
 # Imports
-from pwchem.wizards import GetRadiusProtein
-from ..protocols import ProtChemLeDock
+from pwchem.wizards import GetRadiusProtein, SelectMultiChainWizard
+from ..protocols import *
 
-class GetRadiusProteinLePhar(GetRadiusProtein):
-    _targets = [(ProtChemLeDock, ['radius']),
-                ]
+GetRadiusProtein().addTarget(protocol=ProtChemLeDock,
+                             targets=['radius'],
+                             inputs=['inputAtomStruct'],
+                             outputs=['radius'])
 
-
+SelectMultiChainWizard().addTarget(protocol=ProtChemLePro,
+                                   targets=['chain_name'],
+                                   inputs=['inputAtomStruct'],
+                                   outputs=['chain_name'])
 
