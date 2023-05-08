@@ -32,7 +32,7 @@ from pyworkflow.protocol.params import PointerParam, IntParam, FloatParam, STEPS
 import pyworkflow.object as pwobj
 
 
-from pwchem.utils import runOpenBabel, removeNumberFromStr, performBatchThreading
+from pwchem.utils import runOpenBabel, removeNumberFromStr, performBatchThreading, relabelMapAtomsMol2
 from pwchem.objects import SetOfSmallMolecules, SmallMolecule
 
 from lephar import Plugin as lephar_plugin
@@ -127,7 +127,7 @@ class ProtChemLeDock(EMProtocol):
 
                     args = ' -i{} {} -omol2 -O {}'.format(inExt[1:], os.path.abspath(molFile), oFile)
                     runOpenBabel(protocol=self, args=args, cwd=self._getExtraPath())
-                    molFile = oFile
+                    molFile = relabelMapAtomsMol2(oFile, mol.getMapDic())
 
                 fLig.write(molFile + '\n')
                 if iLig == 0:
