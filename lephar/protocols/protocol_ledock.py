@@ -127,7 +127,7 @@ class ProtChemLeDock(EMProtocol):
 
                     args = ' -i{} {} -omol2 -O {}'.format(inExt[1:], os.path.abspath(molFile), oFile)
                     runOpenBabel(protocol=self, args=args, cwd=self._getExtraPath())
-                    molFile = relabelMapAtomsMol2(oFile, mol.getMapDic())
+                    molFile = relabelMapAtomsMol2(oFile)
 
                 fLig.write(molFile + '\n')
                 if iLig == 0:
