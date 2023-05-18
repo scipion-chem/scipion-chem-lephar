@@ -31,11 +31,12 @@ from pwem.objects import AtomStruct
 from pyworkflow.protocol.params import PointerParam, BooleanParam, StringParam
 
 from pwchem.utils import clean_PDB, removeNumberFromStr, getChainIds
+from pwchem.protocols import ProtChemPrepareReceptor
 
 from lephar import Plugin as lephar_plugin
 
 
-class ProtChemLePro(EMProtocol):
+class ProtChemLePro(ProtChemPrepareReceptor):
     """Perform a target preparation using the LePro binary from LePhar:
     http://www.lephar.com/software.htm
     """
@@ -49,21 +50,7 @@ class ProtChemLePro(EMProtocol):
                        label='Input atomic structure:',
                        help="The atom structure to be prepared")
 
-        clean = form.addGroup('Clean Structure File')
-        clean.addParam("HETATM", BooleanParam,
-                       label='Remove ligands HETATM',
-                       default=True, important=True,
-                       help='Remove all ligands and HETATM contained in the protein')
-
-        clean.addParam("rchains", BooleanParam,
-                       label='Select specific chains: ',
-                       default=False, important=True,
-                       help='Keep only the chains selected')
-
-        clean.addParam("chain_name", StringParam,
-                       label="Keep chains: ", important=True,
-                       condition="rchains==True",
-                       help="Select the chain(s) you want to keep in the structure")
+        clean = self.defineCleanParams(form, w=False, hk=False)
 
     # --------------------------- INSERT steps functions --------------------
     def _insertAllSteps(self):
