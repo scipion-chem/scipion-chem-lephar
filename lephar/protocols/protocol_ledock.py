@@ -52,7 +52,7 @@ class ProtChemLeDock(EMProtocol):
     def _defineParams(self, form):
         form.addSection(label='Input')
         group = form.addGroup('Input')
-        group.addParam('wholeProt', BooleanParam, label='Dock on whole protein: ', default=True,
+        group.addParam('wholeProt', BooleanParam, label='Dock on whole protein: ', default=False,
                       help='Whether to dock on a whole protein surface or on specific regions')
 
         #Docking on whole protein
