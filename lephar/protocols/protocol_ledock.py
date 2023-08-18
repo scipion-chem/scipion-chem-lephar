@@ -24,7 +24,7 @@
 # *
 # **************************************************************************
 
-import os, glob
+import os, time
 
 from pwem.convert import AtomicStructHandler
 from pwem.protocols import EMProtocol
@@ -32,7 +32,7 @@ from pyworkflow.protocol.params import PointerParam, IntParam, FloatParam, STEPS
 import pyworkflow.object as pwobj
 
 
-from pwchem.utils import runOpenBabel, removeNumberFromStr, performBatchThreading, relabelMapAtomsMol2
+from pwchem.utils import removeNumberFromStr, performBatchThreading, runInParallel, convertMol2
 from pwchem.objects import SetOfSmallMolecules, SmallMolecule
 
 from lephar import Plugin as lephar_plugin
@@ -80,11 +80,6 @@ class ProtChemLeDock(EMProtocol):
         group.addParam('nRuns', IntParam, label='Number of positions per ligand: ', default=10,
                        help='Maximum number of poses to output per ligand per StructROI')
 
-        group.addParam('paralLigand', BooleanParam, label='Parallelize on ligands: ', default=False,
-                       help='Parallelize docking processes on ligand batches')
-        group.addParam('ligandBatches', IntParam, label='Batches ligands: ', default=2, condition='paralLigand',
-                       help='Number of batches of ligands to parallelize the docking')
-
         form.addParallelSection(threads=4, mpi=1)
 
     # --------------------------- INSERT steps functions --------------------
@@ -111,35 +106,12 @@ class ProtChemLeDock(EMProtocol):
         self._insertFunctionStep('createOutputStep', prerequisites=dockSteps)
 
     def convertStep(self):
+        outDir = self._getExtraPath()
         #Receptor as prepared by lepro
-        lephar_plugin.runLePhar(self, 'lepro', args=os.path.abspath(self.getOriginalReceptorFile()),
-                                cwd=self._getExtraPath())
-        #list of mol2 files for ligands. lefrag for dividing mol2 multiple files
-        with open(self.getLigandListFile(), 'w') as fLig:
-            nBatches = self.getNBatches()
-            lenBatch = (len(self.inputSmallMolecules.get()) // nBatches) + 1
-            iLig, iFile = 0, 0
-            for mol in self.inputSmallMolecules.get():
-                molFile = os.path.abspath(mol.getFileName())
-                if not molFile.endswith('.mol2'):
-                    inName, inExt = os.path.splitext(os.path.basename(molFile))
-                    oFile = os.path.abspath(os.path.join(self._getExtraPath(inName + '.mol2')))
+        lephar_plugin.runLePhar(self, 'lepro', args=os.path.abspath(self.getOriginalReceptorFile()), cwd=outDir)
 
-                    args = ' -i{} {} -omol2 -O {}'.format(inExt[1:], os.path.abspath(molFile), oFile)
-                    runOpenBabel(protocol=self, args=args, cwd=self._getExtraPath())
-                    molFile = relabelMapAtomsMol2(oFile)
-
-                fLig.write(molFile + '\n')
-                if iLig == 0:
-                    fLigBase = open(self.getLigandListFile(base=True, idx=iFile), 'w')
-
-                fLigBase.write(os.path.basename(molFile) + '\n')
-                iLig += 1
-                if iLig == lenBatch:
-                    fLigBase.close()
-                    iLig = 0
-                    iFile += 1
-
+        # Ligands in mol2 format
+        self.convertAndWriteMolSet(self.inputSmallMolecules.get(), outDir, self.numberOfThreads.get())
 
     def dockStep(self, pocket=None, idx=None):
         oDir = self.getOutputPocketDir(pocket)
@@ -190,7 +162,6 @@ class ProtChemLeDock(EMProtocol):
                             newSmallMol.gridId.set(gridId)
                             newSmallMol.setMolClass('LeDock')
                             newSmallMol.setDockId(self.getObjId())
-
                             outputSet.append(newSmallMol)
 
         outputSet.proteinFile.set(self.getOriginalReceptorFile())
@@ -218,6 +189,27 @@ class ProtChemLeDock(EMProtocol):
       
 ########################### Utils functions ############################
 
+    def convertAndWriteMolSet(self, molSet, outDir, nJobs):
+        convMolFiles = runInParallel(convertMol2, outDir, paramList=[item.clone() for item in molSet], jobs=nJobs)
+
+        # list of mol2 files for ligands.
+        with open(self.getLigandListFile(), 'w') as fLig:
+            nBatches = self.getNBatches()
+            lenBatch = (len(molSet) // nBatches) + 1
+
+            iLig, iFile = 0, 0
+            for molFile in convMolFiles:
+                fLig.write(molFile + '\n')
+                if iLig == 0:
+                    fLigBase = open(self.getLigandListFile(base=True, idx=iFile), 'w')
+
+                fLigBase.write(os.path.basename(molFile) + '\n')
+                iLig += 1
+                if iLig == lenBatch:
+                    fLigBase.close()
+                    iLig = 0
+                    iFile += 1
+
     def getDockFiles(self, ligListFile, pocketDir):
         dockFiles = []
         with open(self._getPath(ligListFile)) as f:
@@ -227,10 +219,12 @@ class ProtChemLeDock(EMProtocol):
         return dockFiles
 
     def getNBatches(self):
-        if self.paralLigand.get():
-            nBatches = self.ligandBatches.get()
+        nThreads = self.numberOfThreads.get()
+        if self.wholeProt:
+            nBatches = nThreads
         else:
-            nBatches = 1
+            nPockets = len(self.inputStructROIs.get())
+            nBatches = nThreads // nPockets
         return nBatches
 
     def parseEnergy(self, molFile):
@@ -333,9 +327,10 @@ class ProtChemLeDock(EMProtocol):
         return os.path.basename(sourcePath)
 
     def doLocalLig(self, outDir, idx=0):
-        with open(self.getLigandListFile()) as fIn:
-            for molFile in fIn:
-                self.linkLocal(molFile.strip(), outDir)
+        if idx == 0:
+            with open(self.getLigandListFile()) as fIn:
+                for molFile in fIn:
+                    self.linkLocal(molFile.strip(), outDir)
 
         return self.linkLocal(self.getLigandListFile(base=True, idx=idx), outDir)
 
