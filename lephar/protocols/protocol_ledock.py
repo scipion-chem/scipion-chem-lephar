@@ -32,7 +32,7 @@ from pyworkflow.protocol.params import PointerParam, IntParam, FloatParam, STEPS
 import pyworkflow.object as pwobj
 
 
-from pwchem.utils import removeNumberFromStr, performBatchThreading, runInParallel, convertMol2
+from pwchem.utils import removeNumberFromStr, performBatchThreading, runInParallel, obabelMolConversion, makeSubsets
 from pwchem.objects import SetOfSmallMolecules, SmallMolecule
 
 from lephar import Plugin as lephar_plugin
@@ -190,25 +190,16 @@ class ProtChemLeDock(EMProtocol):
 ########################### Utils functions ############################
 
     def convertAndWriteMolSet(self, molSet, outDir, nJobs):
-        convMolFiles = runInParallel(convertMol2, outDir, paramList=[item.clone() for item in molSet], jobs=nJobs)
+        convMolFiles = runInParallel(obabelMolConversion, '.mol2', outDir, paramList=[item.clone() for item in molSet],
+                                     jobs=nJobs)
+        molFileSubsets = makeSubsets(convMolFiles, self.getNBatches(), cloneItem=False)
 
-        # list of mol2 files for ligands.
         with open(self.getLigandListFile(), 'w') as fLig:
-            nBatches = self.getNBatches()
-            lenBatch = (len(molSet) // nBatches) + 1
-
-            iLig, iFile = 0, 0
-            for molFile in convMolFiles:
-                fLig.write(molFile + '\n')
-                if iLig == 0:
-                    fLigBase = open(self.getLigandListFile(base=True, idx=iFile), 'w')
-
-                fLigBase.write(os.path.basename(molFile) + '\n')
-                iLig += 1
-                if iLig == lenBatch:
-                    fLigBase.close()
-                    iLig = 0
-                    iFile += 1
+            for iSet, molFSet in enumerate(molFileSubsets):
+                with open(self.getLigandListFile(base=True, idx=iSet), 'w') as fLigBase:
+                    for molFile in molFSet:
+                        fLig.write(molFile + '\n')
+                        fLigBase.write(os.path.basename(molFile) + '\n')
 
     def getDockFiles(self, ligListFile, pocketDir):
         dockFiles = []
