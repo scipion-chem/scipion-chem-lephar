@@ -84,26 +84,33 @@ class ProtChemLeDock(EMProtocol):
 
     # --------------------------- INSERT steps functions --------------------
     def _insertAllSteps(self):
+        nThreads = self.getnThreads()
         cId = self._insertFunctionStep('convertStep', prerequisites=[])
 
-        dockSteps = []
+        dockSteps, splitSteps = [], []
         if self.wholeProt:
             pocketDir = self.getOutputPocketDir()
             os.mkdir(pocketDir)
-            nBatches = self.getNBatches()
-            for i in range(nBatches):
+            for i in range(nThreads):
                 dockId = self._insertFunctionStep('dockStep', None, i, poprerequisites=[cId])
             dockSteps.append(dockId)
+
+            splitId = self._insertFunctionStep('splitStep', None, nThreads, prerequisites=dockSteps)
+            splitSteps.append(splitId)
+            
         else:
             for pocket in self.inputStructROIs.get():
                 pocketDir = self.getOutputPocketDir(pocket)
                 os.mkdir(pocketDir)
-                nBatches = self.getNBatches()
-                for i in range(nBatches):
+                for i in range(nThreads):
                     dockId = self._insertFunctionStep('dockStep', pocket.clone(), i, prerequisites=[cId])
                     dockSteps.append(dockId)
-
-        self._insertFunctionStep('createOutputStep', prerequisites=dockSteps)
+                    
+            for pocket in self.inputStructROIs.get():
+                splitId = self._insertFunctionStep('splitStep', pocket.clone(), nThreads, prerequisites=dockSteps)
+                splitSteps.append(splitId)
+                
+        self._insertFunctionStep('createOutputStep', prerequisites=splitSteps)
 
     def convertStep(self):
         outDir = self._getExtraPath()
@@ -115,22 +122,13 @@ class ProtChemLeDock(EMProtocol):
 
     def dockStep(self, pocket=None, idx=None):
         oDir = self.getOutputPocketDir(pocket)
-        dockParamFile, ligList = self.writeDockInFile(pocket, idx=idx)
+        dockParamFile, _ = self.writeDockInFile(pocket, idx=idx)
         lephar_plugin.runLePhar(self, program=self._program, args=dockParamFile, cwd=oDir)
 
-        dockFiles = self.getDockFiles(ligList, oDir)
-
-        for dokFile in dockFiles:
-            dokBase = os.path.basename(dokFile)
-            dokRoot = dokBase.split('.')[0]
-            dokDir = os.path.join(oDir, dokRoot)
-            os.mkdir(dokDir)
-
-            newDockFile = os.path.join(dokDir, dokBase)
-            os.rename(dokFile, newDockFile)
-            args = ' -spli ' + os.path.abspath(newDockFile)
-            lephar_plugin.runLePhar(self, program=self._program, args=args, cwd=oDir, runJob=False)
-            os.remove(newDockFile)
+    def splitStep(self, pocket=None, nThreads=None):
+        oDir = self.getOutputPocketDir(pocket)
+        dockFiles = self.getDockFiles(oDir)
+        performBatchThreading(self.performSplit, dockFiles, nThreads, cloneItem=False, outDir=oDir)
 
     def createOutputStep(self):
         allFiles = []
@@ -192,7 +190,7 @@ class ProtChemLeDock(EMProtocol):
     def convertAndWriteMolSet(self, molSet, outDir, nJobs):
         convMolFiles = runInParallel(obabelMolConversion, '.mol2', outDir, paramList=[item.clone() for item in molSet],
                                      jobs=nJobs)
-        molFileSubsets = makeSubsets(convMolFiles, self.getNBatches(), cloneItem=False)
+        molFileSubsets = makeSubsets(convMolFiles, self.getnThreads(), cloneItem=False)
 
         with open(self.getLigandListFile(), 'w') as fLig:
             for iSet, molFSet in enumerate(molFileSubsets):
@@ -201,22 +199,45 @@ class ProtChemLeDock(EMProtocol):
                         fLig.write(molFile + '\n')
                         fLigBase.write(os.path.basename(molFile) + '\n')
 
-    def getDockFiles(self, ligListFile, pocketDir):
+    def performSplit(self, dockFiles, molLists, it, outDir):
+        for dockFile in dockFiles:
+            dockBase = os.path.basename(dockFile)
+            dockRoot = dockBase.split('.')[0]
+            dockDir = os.path.join(outDir, dockRoot)
+            os.mkdir(dockDir)
+
+            newDockFile = os.path.join(dockDir, dockBase)
+            os.rename(dockFile, newDockFile)
+            args = ' -spli ' + os.path.abspath(newDockFile)
+            lephar_plugin.runLePhar(self, program=self._program, args=args, cwd=outDir, runJob=False)
+            os.remove(newDockFile)
+
+    def correctMolFile(self, molFiles, molsLists, it):
+        for molFile in molFiles:
+            newFile = self.renameDockFile(molFile)
+            with open(molFile) as fIn:
+                with open(newFile, 'w') as f:
+                    for line in fIn:
+                        if line.startswith('ATOM'):
+                            atomSym = removeNumberFromStr(line.split()[2])
+                            line = line.strip() + '  1.00  0.00{}{}\n'.format(' ' * (12 - len(atomSym)), atomSym)
+                        f.write(line)
+            os.remove(molFile)
+
+    def getDockFiles(self, pocketDir):
         dockFiles = []
-        with open(self._getPath(ligListFile)) as f:
-            for line in f:
-                basename = line.strip().split('.')[0]
-                dockFiles.append(os.path.abspath(os.path.join(pocketDir, basename + '.dok')))
+        for file in os.listdir(pocketDir):
+            if file.endswith('.dok'):
+                dockFiles.append(os.path.abspath(os.path.join(pocketDir, file)))
         return dockFiles
 
-    def getNBatches(self):
+    def getnThreads(self):
+        '''Get the number of threads available for each pocket execution'''
         nThreads = self.numberOfThreads.get()
-        if self.wholeProt:
-            nBatches = nThreads
-        else:
+        if not self.wholeProt:
             nPockets = len(self.inputStructROIs.get())
-            nBatches = nThreads // nPockets
-        return nBatches
+            nThreads = nThreads // nPockets
+        return nThreads
 
     def parseEnergy(self, molFile):
         with open(molFile) as fMol:
@@ -237,18 +258,6 @@ class ProtChemLeDock(EMProtocol):
                                     int(outBase.split('dock')[-1].split('.')[0]))
         newFile = os.path.join(os.path.dirname(outFile), newBase)
         return newFile
-
-    def correctMolFile(self, molFiles, molsLists, it):
-        for molFile in molFiles:
-            newFile = self.renameDockFile(molFile)
-            with open(molFile) as fIn:
-                with open(newFile, 'w') as f:
-                    for line in fIn:
-                        if line.startswith('ATOM'):
-                            atomSym = removeNumberFromStr(line.split()[2])
-                            line = line.strip() + '  1.00  0.00{}{}\n'.format(' '*(12-len(atomSym)), atomSym)
-                        f.write(line)
-            os.remove(molFile)
 
     def getGridId(self, outDir):
         return outDir.split('_')[-1]
