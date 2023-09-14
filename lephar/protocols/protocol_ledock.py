@@ -234,9 +234,7 @@ class ProtChemLeDock(EMProtocol):
     def getnThreads(self):
         '''Get the number of threads available for each pocket execution'''
         nThreads = self.numberOfThreads.get()
-        if self.wholeProt:
-            nThreads = nThreads
-        else:
+        if not self.wholeProt:
             nPockets = len(self.inputStructROIs.get())
             nThreads = nThreads // nPockets
         return nThreads
