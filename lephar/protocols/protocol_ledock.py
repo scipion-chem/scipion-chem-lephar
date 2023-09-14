@@ -122,7 +122,7 @@ class ProtChemLeDock(EMProtocol):
 
     def dockStep(self, pocket=None, idx=None):
         oDir = self.getOutputPocketDir(pocket)
-        dockParamFile, ligList = self.writeDockInFile(pocket, idx=idx)
+        dockParamFile, _ = self.writeDockInFile(pocket, idx=idx)
         lephar_plugin.runLePhar(self, program=self._program, args=dockParamFile, cwd=oDir)
 
     def splitStep(self, pocket=None, nThreads=None):
