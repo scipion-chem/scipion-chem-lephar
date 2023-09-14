@@ -118,7 +118,7 @@ class TestLeDock(TestLePro):
                 inputAtomStruct=self.protPrepareReceptor.outputStructure,
                 inputSmallMolecules=self.protOBabel.outputSmallMolecules,
                 radius=24, nRuns=2,
-                numberOfThreads=8)
+                numberOfThreads=1)
             self.proj.launchProtocol(protAutoDock, wait=False)
 
         else:
