@@ -128,8 +128,6 @@ class ProtChemLeDock(EMProtocol):
     def splitStep(self, pocket=None, nThreads=None):
         oDir = self.getOutputPocketDir(pocket)
         dockFiles = self.getDockFiles(oDir)
-        print('all: ', len(dockFiles))
-
         performBatchThreading(self.performSplit, dockFiles, nThreads, cloneItem=False, outDir=oDir)
 
     def createOutputStep(self):
