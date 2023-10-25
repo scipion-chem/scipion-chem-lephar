@@ -30,7 +30,7 @@ from pwem.protocols import EMProtocol
 from pwem.objects import AtomStruct
 from pyworkflow.protocol.params import PointerParam, BooleanParam, StringParam
 
-from pwchem.utils import clean_PDB, removeNumberFromStr, getChainIds
+from pwchem.utils import cleanPDB, removeNumberFromStr, getChainIds
 from pwchem.protocols import ProtChemPrepareReceptor
 
 from lephar import Plugin as lephar_plugin
@@ -67,7 +67,7 @@ class ProtChemLePro(ProtChemPrepareReceptor):
         if self.rchains.get():
             chain_ids = getChainIds(self.chain_name.get())
 
-        cleanedPDB = clean_PDB(self.inputAtomStruct.get().getFileName(), fnPdb,
+        cleanedPDB = cleanPDB(self.inputAtomStruct.get().getFileName(), fnPdb,
                                False, self.HETATM.get(), chain_ids)
 
         args = os.path.abspath(cleanedPDB)
