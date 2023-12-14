@@ -4,8 +4,9 @@ LePhar scipion plugin
 
 **Documentation under development, sorry for the inconvenience**
 
-LePhar software plugin defining objects and protocols for docking.
-You can check their website in http://www.lephar.com/index.htm
+`LePhar <http://www.lephar.com/index.htm>`_ software plugin defining objects and protocols for docking.
+
+Full documentation to this plugin can be found in the `official documentation page <https://scipion-chem.github.io/docs/plugins/lephar/index.html>`_.
 
 ===================
 Install this plugin
