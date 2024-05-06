@@ -242,10 +242,11 @@ class ProtChemLeDock(EMProtocol):
 
     def parseEnergy(self, molFile):
         with open(molFile) as fMol:
-            fMol.readline()
-            line = fMol.readline()
-        return line.split()[-2]
-
+            for line in fMol:
+                if line.startswith('REMARK Cluster'):
+                    score = line.split()[-2]
+                    break
+        return score
 
     def getInputMolsDic(self):
         dic = {}
