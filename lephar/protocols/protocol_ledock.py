@@ -92,7 +92,7 @@ class ProtChemLeDock(EMProtocol):
             pocketDir = self.getOutputPocketDir()
             os.mkdir(pocketDir)
             for i in range(nThreads):
-                dockId = self._insertFunctionStep('dockStep', None, i, poprerequisites=[cId])
+                dockId = self._insertFunctionStep('dockStep', None, i, prerequisites=[cId])
             dockSteps.append(dockId)
 
             splitId = self._insertFunctionStep('splitStep', None, nThreads, prerequisites=dockSteps)
