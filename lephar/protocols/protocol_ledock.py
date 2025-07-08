@@ -41,7 +41,47 @@ from lephar.constants import *
 
 class ProtChemLeDock(EMProtocol):
     """Perform a docking experiment with LeDock, from LePhar software
-    http://www.lephar.com/software.htm"""
+    http://www.lephar.com/software.htm
+    
+    User IA Manual: Ledock Protocol
+
+The Ledock protocol provides an interface for running molecular docking using
+the LeDock engine within Scipion-Chem. It enables fast and flexible docking of
+ligands into a defined receptor pocket, producing predicted binding poses and
+scores that can be used for ranking, analysis, or post-processing.
+
+To begin, the user must provide a receptor structure in PDB format. This
+structure should be properly prepared, including the removal of water molecules,
+addition of hydrogens, and any other adjustments necessary to define the binding
+environment. A set of ligands must also be supplied in MOL2 format. Each ligand
+should be a valid 3D structure with correct atom types and bond orders.
+
+The user must define the docking box by specifying the coordinates of the center
+and the dimensions of the box in three directions. These values determine the
+volume of space that LeDock will explore when generating poses. The box should
+fully enclose the binding site and allow sufficient space for the ligand to move
+and rotate during docking.
+
+Several parameters allow control over the docking behavior. The number of poses
+to generate per ligand can be set according to the diversity of expected
+conformations. The user can also adjust the exhaustiveness of the search,
+affecting how thoroughly the conformational space is sampled. Runtime and
+accuracy depend on these settings, and should be balanced based on library size
+and screening goals.
+
+Once the docking process is complete, the protocol produces a set of output
+structures in MOL2 format. Each file contains one or more poses per ligand,
+ranked by predicted binding score. A summary table is also generated, reporting
+scores and ranking information across all ligands. These results can be visualized,
+filtered, or passed directly to downstream protocols for rescoring, clustering,
+or further modeling.
+
+In summary, the Ledock protocol enables structure-based virtual screening using
+a lightweight and efficient docking engine. It supports flexible parameterization,
+handles multiple ligands, and integrates seamlessly with the Scipion-Chem
+pipeline for ligand preparation, analysis, and selection.
+    
+    """
     _label = 'LeDock docking'
     _program = "ledock"
 
