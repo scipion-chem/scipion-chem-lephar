@@ -40,7 +40,49 @@ oForm = 'mol2'
 
 class ProtChemClusterMCS(EMProtocol):
     """Perform a molecule structure clustering using CLusterByMCSbinary from LePhar
-    http://www.lephar.com/software.htm"""
+    http://www.lephar.com/software.htm
+    
+    User IA Manual: ClusterSubstructures Protocol
+
+The ClusterSubstructures protocol is designed to analyze a set of chemical
+structures and group them based on shared substructural features. It enables
+the identification of common scaffolds or motifs across a molecular dataset,
+facilitating structure?activity relationship analysis, chemical diversity
+assessment, or hit expansion strategies within virtual screening workflows.
+
+To use the protocol, the user must provide a collection of ligands or compounds
+in a format that includes molecular connectivity. These can originate from prior
+docking, enumeration, or library preparation steps. Each compound is examined
+to identify relevant substructures, and molecules are compared to determine
+their level of shared chemical features.
+
+The user can select how substructures are extracted and compared, typically
+based on molecular fingerprints, scaffold definitions, or graph-based similarity.
+The level of clustering sensitivity can be adjusted, allowing either fine-grained
+separation based on small differences or broader grouping around central cores.
+Thresholds can be set to control how similar two molecules must be to be placed
+in the same cluster.
+
+In addition to the similarity metric, the protocol allows configuration of the
+minimum cluster size to retain, which helps eliminate noise or outlier compounds.
+Clustering methods may be hierarchical or fingerprint-based, depending on the
+chosen algorithm. The resulting clusters reflect substructure-based
+relationships and are independent of docking scores or external annotations.
+
+Once clustering is complete, the output includes a list of clusters, each with
+its member compounds and a representative structure or scaffold. This
+information can be used to select diverse compounds for experimental validation,
+identify recurring chemotypes, or guide further molecular design. Visual
+inspection of cluster representatives and distribution plots is supported within
+Scipion-Chem, and all data can be exported for reporting or use in other
+protocols.
+
+In summary, the ClusterSubstructures protocol offers a practical and automated
+way to group chemical compounds based on their internal structure. It supports
+exploratory analysis of molecular libraries and enhances interpretability in
+ligand-based screening workflows.
+
+    """
     _label = 'LePhar molecule clustering'
     _program = "ClusterByMCS"
 
