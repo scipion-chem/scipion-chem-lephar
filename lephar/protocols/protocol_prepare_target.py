@@ -39,6 +39,47 @@ from lephar import Plugin as lephar_plugin
 class ProtChemLePro(ProtChemPrepareReceptor):
     """Perform a target preparation using the LePro binary from LePhar:
     http://www.lephar.com/software.htm
+
+User IA Manual: PrepareTarget Protocol
+
+The PrepareTarget protocol is used to process and format a receptor structure
+so that it is ready for molecular docking within the LePhar workflow. It handles
+key steps such as cleaning the structure, defining the binding site, and
+converting the file into the format required by the docking engine.
+
+The user begins by providing a receptor in PDB format. This structure should
+include all atoms necessary for docking but may also contain crystallographic
+waters, ligands, or other heteroatoms that must be removed prior to docking.
+The protocol parses the input and filters out components that are not relevant
+for ligand binding, while retaining the atoms necessary to define the pocket
+environment.
+
+To define the region where docking will take place, the user must set the center
+of the binding site using three-dimensional coordinates. These values can be
+derived from a known ligand, a predicted pocket, or by visual inspection of the
+receptor. The dimensions of the docking box are also specified at this stage,
+ensuring that the docking engine will search the correct volume of space.
+
+The protocol can automatically add missing hydrogen atoms to the receptor,
+adjust protonation states, and ensure that the final structure is chemically
+valid. This step is essential for maintaining the physical integrity of the
+receptor and for producing reliable docking results. The user may also choose to
+retain or discard cofactors or metal ions, depending on whether they are relevant
+to ligand binding.
+
+Once the structure has been cleaned and the binding site defined, the receptor
+is converted into the appropriate docking format. The final output includes a
+MOL2 file containing the processed receptor and a configuration file that
+records the box definition and other docking parameters. These outputs are used
+directly by the docking protocol and ensure consistency across the virtual
+screening workflow.
+
+In summary, the PrepareTarget protocol standardizes and formats receptor
+structures for docking, offering a reproducible and automated method to define
+binding sites and prepare the physical model of the target. It serves as a
+critical step before molecular docking and ensures that all required inputs are
+correctly structured and ready for high-throughput screening.
+
     """
     _label = 'LePro target preparation'
     _program = "lepro"
