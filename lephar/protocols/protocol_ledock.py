@@ -238,6 +238,7 @@ class ProtChemLeDock(EMProtocol):
             nPockets = len(self.inputStructROIs.get())
             nThreads = nThreads // nPockets
         nThreads = 1 if nThreads == 0 else nThreads
+        nThreads = min(nThreads, len(self.inputSmallMolecules.get()))
         return nThreads
 
     def parseEnergy(self, molFile):
