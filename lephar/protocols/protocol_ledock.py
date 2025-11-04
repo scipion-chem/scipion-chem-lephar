@@ -325,7 +325,7 @@ class ProtChemLeDock(EMProtocol):
 
     def linkLocal(self, sourcePath, outDir):
         outFile = os.path.join(outDir, os.path.basename(sourcePath))
-        if not os.path.exists(outFile):
+        if os.path.exists(outFile):
             os.remove(outFile)
         os.symlink(sourcePath, outFile)
         return os.path.basename(sourcePath)
