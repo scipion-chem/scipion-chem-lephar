@@ -32,7 +32,8 @@ from pyworkflow.protocol.params import PointerParam, IntParam, FloatParam, STEPS
 import pyworkflow.object as pwobj
 
 
-from pwchem.utils import removeNumberFromStr, performBatchThreading, runInParallel, obabelMolConversion, makeSubsets
+from pwchem.utils import removeNumberFromStr, performBatchThreading, runInParallel, obabelMolConversion, makeSubsets, \
+    getBaseName
 from pwchem.objects import SetOfSmallMolecules, SmallMolecule
 
 from lephar import Plugin as lephar_plugin
@@ -252,7 +253,8 @@ class ProtChemLeDock(EMProtocol):
     def getInputMolsDic(self):
         dic = {}
         for mol in self.inputSmallMolecules.get():
-            dic[mol.clone().getUniqueName(False, True, False, False)] = mol.clone()
+            molFile = getBaseName(mol.getFileName())
+            dic[molFile] = mol.clone()
         return dic
 
     def renameDockFile(self, outFile):
