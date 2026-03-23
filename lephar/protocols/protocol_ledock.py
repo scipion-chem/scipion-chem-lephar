@@ -42,7 +42,125 @@ from lephar.constants import *
 
 class ProtChemLeDock(EMProtocol):
     """Perform a docking experiment with LeDock, from LePhar software
-    http://www.lephar.com/software.htm"""
+    http://www.lephar.com/software.htm
+     AI Generated:
+
+      ProtChemLeDock - User Manual
+
+      Overview
+      --------
+      The ProtChemLeDock protocol performs molecular docking using the LeDock
+      engine from the LePhar suite. It enables flexible and efficient docking
+      of small molecules (ligands) into a receptor structure, either across
+      the whole protein or within predefined binding pockets.
+
+      This protocol is designed for high-throughput virtual screening and
+      integrates seamlessly within the Scipion-Chem workflow.
+
+      Input Requirements
+      ------------------
+      1. **Receptor Structure**:
+         - AtomStruct object (whole protein docking) OR
+         - SetOfStructROIs (pocket-based docking)
+         - Must be properly prepared (e.g., via LePro).
+
+      2. **Ligand Library**:
+         - SetOfSmallMolecules containing ligands.
+         - Ligands should have valid 3D structures.
+         - Automatically converted to MOL2 format if needed.
+
+      3. **Docking Parameters**:
+         - Number of poses per ligand.
+         - RMSD clustering threshold.
+         - Docking grid definition (radius or pocket-based scaling).
+
+      Workflow
+      --------
+      1. **Receptor Preparation**:
+         - Uses the prepared receptor structure.
+         - If needed, links or accesses processed receptor files.
+
+      2. **Ligand Conversion**:
+         - Converts ligands into MOL2 format.
+         - Splits ligand library into subsets for parallel processing.
+
+      3. **Docking Setup**:
+         - Defines docking box based on:
+           - Whole protein center and radius OR
+           - Structural ROI center and diameter.
+         - Generates LeDock input configuration files.
+
+      4. **LeDock Execution**:
+         - Runs the LeDock binary from the LePhar suite.
+         - Executes docking for each ligand and pocket.
+         - Supports parallel execution using multiple threads.
+
+      5. **Result Processing**:
+         - Parses output docking files.
+         - Extracts docking scores (energies).
+         - Corrects and standardizes molecular files.
+
+      6. **Output Assembly**:
+         - Creates final SetOfSmallMolecules object.
+         - Attaches docking poses, scores, and metadata.
+
+      Outputs
+      -------
+      - **Docked Small Molecules**:
+        - Set containing ligands with docking results.
+        - Each entry includes:
+          - Docking energy score
+          - Pose file
+          - Pose identifier
+          - Grid or pocket ID
+          - Docking metadata
+
+      - **Pose Files**:
+        - Individual MOL2/PDB files for each docking pose.
+        - Stored in structured directories per pocket.
+
+      - **Receptor File**:
+        - Original receptor structure used in docking.
+
+      Advanced Options
+      ----------------
+      - Docking on whole protein surface.
+      - Docking within specific structural pockets.
+      - Adjustable RMSD clustering threshold.
+      - Control over number of generated poses.
+      - Multithreaded execution for performance optimization.
+
+      Parallelization
+      ---------------
+      - Ligand library is split into subsets.
+      - Docking tasks are distributed across threads.
+      - Independent execution per ligand and per pocket.
+
+      Validation & Warnings
+      ---------------------
+      - Receptor must be provided in correct format.
+      - Ligand library must not be empty.
+      - For whole-protein docking, a radius must be defined.
+      - For pocket docking, StructROIs must be provided.
+      - Incorrect parameters may lead to failed or inaccurate docking.
+
+      Practical Recommendations
+      -------------------------
+      - Always prepare the receptor beforehand (e.g., using LePro).
+      - Use appropriate grid size to cover the binding site.
+      - Balance number of poses vs computational cost.
+      - Inspect docking results before downstream analysis.
+      - Use pocket-based docking for targeted studies when possible.
+
+      Final Perspective
+      -----------------
+      ProtChemLeDock provides a fast and flexible docking solution within
+      Scipion-Chem, enabling both global and targeted docking strategies.
+      It automates ligand handling, parallel execution, and result processing,
+      making it suitable for large-scale virtual screening and structural
+      analysis workflows.
+    
+    """
     _label = 'LeDock docking'
     _program = "ledock"
 

@@ -40,7 +40,99 @@ oForm = 'mol2'
 
 class ProtChemClusterMCS(EMProtocol):
     """Perform a molecule structure clustering using CLusterByMCSbinary from LePhar
-    http://www.lephar.com/software.htm"""
+    http://www.lephar.com/software.htm
+
+    AI Generated:
+
+      ProtChemClusterMCS - User Manual
+
+      Overview
+      --------
+      The ProtChemClusterMCS protocol performs chemical clustering of small
+      molecules based on shared structural features using the
+      ClusterByMCSbinary algorithm from the LePhar suite. It groups molecules
+      according to their maximum common substructures (MCS), enabling the
+      identification of shared scaffolds and chemical motifs across a dataset.
+
+      This protocol is useful for structure–activity relationship (SAR) analysis,
+      chemical diversity assessment, and compound prioritization in virtual
+      screening workflows.
+
+      Input Requirements
+      ------------------
+      1. **Small Molecules**:
+         - Input must be a SetOfSmallMolecules.
+         - Molecules must contain valid structural information (e.g., SMILES, MOL2, SDF).
+
+      2. **Chemical Representation**:
+         - Molecules are internally converted to MOL2 format.
+         - All structures are merged into a single input file.
+
+      Workflow
+      --------
+      1. **Format Conversion**:
+         - Input molecules are converted to MOL2 format using OpenBabel if needed.
+         - A unified ligand file is generated.
+
+      2. **Preprocessing**:
+         - Removes problematic MOL2 sections (e.g., UNITY_ATOM_ATTR).
+         - Ensures compatibility with clustering algorithms.
+
+      3. **Clustering Execution**:
+         - Runs the ClusterByMCSbinary algorithm from LePhar.
+         - Computes pairwise structural similarity based on shared substructures.
+         - Applies a similarity cutoff to define clusters.
+
+      4. **Cluster Assignment**:
+         - Molecules are grouped into clusters based on MCS similarity.
+         - Each cluster contains molecules sharing a common structural core.
+
+      5. **Output Generation**:
+         - Each cluster is saved as a separate SetOfSmallMolecules.
+         - Molecules are exported in MOL2 format and grouped by cluster ID.
+
+      Outputs
+      -------
+      - **Multiple Sets of Small Molecules**:
+        - One output per cluster.
+        - Each set contains molecules belonging to the same structural group.
+
+      - **Cluster Files**:
+        - Generated clustering results in SMILES and MOL2 formats.
+        - Cluster identifiers are preserved for downstream analysis.
+
+      Advanced Options
+      ----------------
+      - Clustering cutoff (0–1):
+        - Controls similarity threshold for grouping molecules.
+        - Lower values produce broader clusters.
+        - Higher values produce more stringent clustering.
+
+      - Automatic format handling:
+        - Conversion of input molecules to MOL2 when required.
+
+      Validation & Warnings
+      ---------------------
+      - Molecules with multiple conformers may cause parsing inconsistencies.
+      - Improper or incomplete molecular structures may affect clustering accuracy.
+      - Very large datasets may increase computation time.
+
+      Practical Recommendations
+      -------------------------
+      - Use cutoff values around 0.6–0.8 for balanced clustering.
+      - Inspect cluster representatives to validate chemical consistency.
+      - Use clustering results to select diverse compounds for experimental testing.
+      - Preprocess and clean molecules before clustering for best results.
+
+      Final Perspective
+      -----------------
+      ProtChemClusterMCS provides an efficient and chemically meaningful way to
+      group molecules based on shared structural features. It enhances the
+      interpretation of molecular libraries and supports diversity analysis,
+      scaffold identification, and ligand-based screening strategies within
+      Scipion-Chem.
+
+    """
     _label = 'LePhar molecule clustering'
     _program = "ClusterByMCS"
 

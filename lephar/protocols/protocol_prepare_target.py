@@ -39,6 +39,96 @@ from lephar import Plugin as lephar_plugin
 class ProtChemLePro(ProtChemPrepareReceptor):
     """Perform a target preparation using the LePro binary from LePhar:
     http://www.lephar.com/software.htm
+
+    AI Generated:
+
+      ProtChemLePro - User Manual
+
+      Overview
+      --------
+      The ProtChemLePro protocol prepares receptor structures for molecular
+      docking using the LePro tool from the LePhar suite. It performs cleaning,
+      formatting, and structural standardization of protein targets to ensure
+      compatibility with downstream docking workflows.
+
+      This protocol is a key preprocessing step that ensures the receptor is
+      chemically valid, properly formatted, and ready for accurate docking
+      simulations.
+
+      Input Requirements
+      ------------------
+      1. **Receptor Structure**:
+         - AtomStruct object containing the protein structure.
+         - Input must be in PDB or compatible format.
+
+      2. **Structure Quality**:
+         - Should include relevant residues for docking.
+         - May contain heteroatoms, ligands, or waters (which can be removed).
+
+      Workflow
+      --------
+      1. **Structure Cleaning**:
+         - Removes unwanted atoms such as:
+           - Water molecules
+           - Crystallographic ligands (optional)
+           - Irrelevant heteroatoms
+         - Optionally filters specific chains.
+
+      2. **Structure Preparation**:
+         - Adds hydrogens where required.
+         - Adjusts protonation states if necessary.
+         - Ensures chemical correctness of the receptor.
+
+      3. **Binding Site Definition**:
+         - Prepares receptor for docking using defined parameters.
+         - Retains structural information needed for binding site characterization.
+
+      4. **LePro Execution**:
+         - Runs the LePro binary from LePhar.
+         - Processes the cleaned receptor structure.
+
+      5. **Output Formatting**:
+         - Converts the processed structure into docking-ready format.
+         - Adds required columns and annotations for compatibility.
+
+      Outputs
+      -------
+      - **Prepared Receptor Structure**:
+        - Output AtomStruct containing the cleaned and formatted receptor.
+        - Stored in PDB format with updated atom annotations.
+
+      - **Formatted Structure Files**:
+        - Intermediate cleaned PDB file.
+        - Final processed file compatible with docking protocols.
+
+      Advanced Options
+      ----------------
+      - Selection of specific chains for preparation.
+      - Retention or removal of heteroatoms.
+      - Integration with broader docking workflows.
+      - Automatic cleaning and formatting utilities.
+
+      Validation & Warnings
+      ---------------------
+      - Input structure must be valid and correctly formatted.
+      - Missing residues or structural inconsistencies may affect results.
+      - Incorrect chain selection may lead to incomplete preparation.
+      - Ensure input is suitable for docking before running the protocol.
+
+      Practical Recommendations
+      -------------------------
+      - Inspect input structures before preparation.
+      - Remove unnecessary ligands unless they are part of the binding site.
+      - Use consistent chain selection across protocols.
+      - Validate output before proceeding to docking.
+
+      Final Perspective
+      -----------------
+      ProtChemLePro provides a robust and automated method for preparing receptor
+      structures for docking using LePro. It ensures that protein targets are
+      chemically consistent, structurally clean, and properly formatted, forming
+      an essential step in high-quality structure-based drug discovery workflows.
+
     """
     _label = 'LePro target preparation'
     _program = "lepro"
