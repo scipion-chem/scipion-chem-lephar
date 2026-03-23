@@ -40,45 +40,94 @@ class ProtChemLePro(ProtChemPrepareReceptor):
     """Perform a target preparation using the LePro binary from LePhar:
     http://www.lephar.com/software.htm
 
-User IA Manual: PrepareTarget Protocol
+    AI Generated:
 
-The PrepareTarget protocol is used to process and format a receptor structure
-so that it is ready for molecular docking within the LePhar workflow. It handles
-key steps such as cleaning the structure, defining the binding site, and
-converting the file into the format required by the docking engine.
+      ProtChemLePro - User Manual
 
-The user begins by providing a receptor in PDB format. This structure should
-include all atoms necessary for docking but may also contain crystallographic
-waters, ligands, or other heteroatoms that must be removed prior to docking.
-The protocol parses the input and filters out components that are not relevant
-for ligand binding, while retaining the atoms necessary to define the pocket
-environment.
+      Overview
+      --------
+      The ProtChemLePro protocol prepares receptor structures for molecular
+      docking using the LePro tool from the LePhar suite. It performs cleaning,
+      formatting, and structural standardization of protein targets to ensure
+      compatibility with downstream docking workflows.
 
-To define the region where docking will take place, the user must set the center
-of the binding site using three-dimensional coordinates. These values can be
-derived from a known ligand, a predicted pocket, or by visual inspection of the
-receptor. The dimensions of the docking box are also specified at this stage,
-ensuring that the docking engine will search the correct volume of space.
+      This protocol is a key preprocessing step that ensures the receptor is
+      chemically valid, properly formatted, and ready for accurate docking
+      simulations.
 
-The protocol can automatically add missing hydrogen atoms to the receptor,
-adjust protonation states, and ensure that the final structure is chemically
-valid. This step is essential for maintaining the physical integrity of the
-receptor and for producing reliable docking results. The user may also choose to
-retain or discard cofactors or metal ions, depending on whether they are relevant
-to ligand binding.
+      Input Requirements
+      ------------------
+      1. **Receptor Structure**:
+         - AtomStruct object containing the protein structure.
+         - Input must be in PDB or compatible format.
 
-Once the structure has been cleaned and the binding site defined, the receptor
-is converted into the appropriate docking format. The final output includes a
-MOL2 file containing the processed receptor and a configuration file that
-records the box definition and other docking parameters. These outputs are used
-directly by the docking protocol and ensure consistency across the virtual
-screening workflow.
+      2. **Structure Quality**:
+         - Should include relevant residues for docking.
+         - May contain heteroatoms, ligands, or waters (which can be removed).
 
-In summary, the PrepareTarget protocol standardizes and formats receptor
-structures for docking, offering a reproducible and automated method to define
-binding sites and prepare the physical model of the target. It serves as a
-critical step before molecular docking and ensures that all required inputs are
-correctly structured and ready for high-throughput screening.
+      Workflow
+      --------
+      1. **Structure Cleaning**:
+         - Removes unwanted atoms such as:
+           - Water molecules
+           - Crystallographic ligands (optional)
+           - Irrelevant heteroatoms
+         - Optionally filters specific chains.
+
+      2. **Structure Preparation**:
+         - Adds hydrogens where required.
+         - Adjusts protonation states if necessary.
+         - Ensures chemical correctness of the receptor.
+
+      3. **Binding Site Definition**:
+         - Prepares receptor for docking using defined parameters.
+         - Retains structural information needed for binding site characterization.
+
+      4. **LePro Execution**:
+         - Runs the LePro binary from LePhar.
+         - Processes the cleaned receptor structure.
+
+      5. **Output Formatting**:
+         - Converts the processed structure into docking-ready format.
+         - Adds required columns and annotations for compatibility.
+
+      Outputs
+      -------
+      - **Prepared Receptor Structure**:
+        - Output AtomStruct containing the cleaned and formatted receptor.
+        - Stored in PDB format with updated atom annotations.
+
+      - **Formatted Structure Files**:
+        - Intermediate cleaned PDB file.
+        - Final processed file compatible with docking protocols.
+
+      Advanced Options
+      ----------------
+      - Selection of specific chains for preparation.
+      - Retention or removal of heteroatoms.
+      - Integration with broader docking workflows.
+      - Automatic cleaning and formatting utilities.
+
+      Validation & Warnings
+      ---------------------
+      - Input structure must be valid and correctly formatted.
+      - Missing residues or structural inconsistencies may affect results.
+      - Incorrect chain selection may lead to incomplete preparation.
+      - Ensure input is suitable for docking before running the protocol.
+
+      Practical Recommendations
+      -------------------------
+      - Inspect input structures before preparation.
+      - Remove unnecessary ligands unless they are part of the binding site.
+      - Use consistent chain selection across protocols.
+      - Validate output before proceeding to docking.
+
+      Final Perspective
+      -----------------
+      ProtChemLePro provides a robust and automated method for preparing receptor
+      structures for docking using LePro. It ensures that protein targets are
+      chemically consistent, structurally clean, and properly formatted, forming
+      an essential step in high-quality structure-based drug discovery workflows.
 
     """
     _label = 'LePro target preparation'

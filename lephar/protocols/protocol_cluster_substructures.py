@@ -41,46 +41,96 @@ oForm = 'mol2'
 class ProtChemClusterMCS(EMProtocol):
     """Perform a molecule structure clustering using CLusterByMCSbinary from LePhar
     http://www.lephar.com/software.htm
-    
-    User IA Manual: ClusterSubstructures Protocol
 
-The ClusterSubstructures protocol is designed to analyze a set of chemical
-structures and group them based on shared substructural features. It enables
-the identification of common scaffolds or motifs across a molecular dataset,
-facilitating structure?activity relationship analysis, chemical diversity
-assessment, or hit expansion strategies within virtual screening workflows.
+    AI Generated:
 
-To use the protocol, the user must provide a collection of ligands or compounds
-in a format that includes molecular connectivity. These can originate from prior
-docking, enumeration, or library preparation steps. Each compound is examined
-to identify relevant substructures, and molecules are compared to determine
-their level of shared chemical features.
+      ProtChemClusterMCS - User Manual
 
-The user can select how substructures are extracted and compared, typically
-based on molecular fingerprints, scaffold definitions, or graph-based similarity.
-The level of clustering sensitivity can be adjusted, allowing either fine-grained
-separation based on small differences or broader grouping around central cores.
-Thresholds can be set to control how similar two molecules must be to be placed
-in the same cluster.
+      Overview
+      --------
+      The ProtChemClusterMCS protocol performs chemical clustering of small
+      molecules based on shared structural features using the
+      ClusterByMCSbinary algorithm from the LePhar suite. It groups molecules
+      according to their maximum common substructures (MCS), enabling the
+      identification of shared scaffolds and chemical motifs across a dataset.
 
-In addition to the similarity metric, the protocol allows configuration of the
-minimum cluster size to retain, which helps eliminate noise or outlier compounds.
-Clustering methods may be hierarchical or fingerprint-based, depending on the
-chosen algorithm. The resulting clusters reflect substructure-based
-relationships and are independent of docking scores or external annotations.
+      This protocol is useful for structure–activity relationship (SAR) analysis,
+      chemical diversity assessment, and compound prioritization in virtual
+      screening workflows.
 
-Once clustering is complete, the output includes a list of clusters, each with
-its member compounds and a representative structure or scaffold. This
-information can be used to select diverse compounds for experimental validation,
-identify recurring chemotypes, or guide further molecular design. Visual
-inspection of cluster representatives and distribution plots is supported within
-Scipion-Chem, and all data can be exported for reporting or use in other
-protocols.
+      Input Requirements
+      ------------------
+      1. **Small Molecules**:
+         - Input must be a SetOfSmallMolecules.
+         - Molecules must contain valid structural information (e.g., SMILES, MOL2, SDF).
 
-In summary, the ClusterSubstructures protocol offers a practical and automated
-way to group chemical compounds based on their internal structure. It supports
-exploratory analysis of molecular libraries and enhances interpretability in
-ligand-based screening workflows.
+      2. **Chemical Representation**:
+         - Molecules are internally converted to MOL2 format.
+         - All structures are merged into a single input file.
+
+      Workflow
+      --------
+      1. **Format Conversion**:
+         - Input molecules are converted to MOL2 format using OpenBabel if needed.
+         - A unified ligand file is generated.
+
+      2. **Preprocessing**:
+         - Removes problematic MOL2 sections (e.g., UNITY_ATOM_ATTR).
+         - Ensures compatibility with clustering algorithms.
+
+      3. **Clustering Execution**:
+         - Runs the ClusterByMCSbinary algorithm from LePhar.
+         - Computes pairwise structural similarity based on shared substructures.
+         - Applies a similarity cutoff to define clusters.
+
+      4. **Cluster Assignment**:
+         - Molecules are grouped into clusters based on MCS similarity.
+         - Each cluster contains molecules sharing a common structural core.
+
+      5. **Output Generation**:
+         - Each cluster is saved as a separate SetOfSmallMolecules.
+         - Molecules are exported in MOL2 format and grouped by cluster ID.
+
+      Outputs
+      -------
+      - **Multiple Sets of Small Molecules**:
+        - One output per cluster.
+        - Each set contains molecules belonging to the same structural group.
+
+      - **Cluster Files**:
+        - Generated clustering results in SMILES and MOL2 formats.
+        - Cluster identifiers are preserved for downstream analysis.
+
+      Advanced Options
+      ----------------
+      - Clustering cutoff (0–1):
+        - Controls similarity threshold for grouping molecules.
+        - Lower values produce broader clusters.
+        - Higher values produce more stringent clustering.
+
+      - Automatic format handling:
+        - Conversion of input molecules to MOL2 when required.
+
+      Validation & Warnings
+      ---------------------
+      - Molecules with multiple conformers may cause parsing inconsistencies.
+      - Improper or incomplete molecular structures may affect clustering accuracy.
+      - Very large datasets may increase computation time.
+
+      Practical Recommendations
+      -------------------------
+      - Use cutoff values around 0.6–0.8 for balanced clustering.
+      - Inspect cluster representatives to validate chemical consistency.
+      - Use clustering results to select diverse compounds for experimental testing.
+      - Preprocess and clean molecules before clustering for best results.
+
+      Final Perspective
+      -----------------
+      ProtChemClusterMCS provides an efficient and chemically meaningful way to
+      group molecules based on shared structural features. It enhances the
+      interpretation of molecular libraries and supports diversity analysis,
+      scaffold identification, and ligand-based screening strategies within
+      Scipion-Chem.
 
     """
     _label = 'LePhar molecule clustering'
