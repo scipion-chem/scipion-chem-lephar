@@ -60,7 +60,7 @@ class Plugin(pwem.Plugin):
           lephar_commands += 'wget {} && chmod +x {} && '.format(cls.getLePharUrl(program), cls.getProgramBin(program))
 
       for eBin in ['QueryDB']:
-          lephar_commands += 'wget {} && unzip {}.zip && rm {}.zip && '.format(cls.getZipUrl(eBin), eBin, eBin)
+          lephar_commands += 'wget {} && unzip {}.zip && rm {}.zip && '.format(cls.getQueryDBUrl(), eBin, eBin)
 
       if not os.path.exists(cls.getProgramHome(LEPHAR_DIC, path='scripts')):
           lephar_commands += 'cd .. && mkdir scripts && cd scripts && '
@@ -115,6 +115,9 @@ class Plugin(pwem.Plugin):
   def getZipUrl(cls, program):
       return 'http://www.lephar.com/download/{}.zip'.format(program)
 
+  @classmethod
+  def getQueryDBUrl(cls):
+      return 'https://github.com/WIMNZhao/Virtual-Screening-Workflow/releases/download/v1.0.0/queryDB'
 
   # In use paths
   @classmethod
