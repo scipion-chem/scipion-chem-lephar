@@ -59,16 +59,15 @@ class Plugin(pwem.Plugin):
       for program in ['ledock', 'lepro', 'lewater', 'lefrag']:
           lephar_commands += 'wget {} && chmod +x {} && '.format(cls.getLePharUrl(program), cls.getProgramBin(program))
 
-      for eBin in ['QueryDB']:
-          lephar_commands += 'wget {} && unzip {}.zip && rm {}.zip && '.format(cls.getQueryDBUrl(), eBin, eBin)
+      #lephar_commands += 'wget {} && '.format(cls.getQueryDBUrl())
 
       if not os.path.exists(cls.getProgramHome(LEPHAR_DIC, path='scripts')):
           lephar_commands += 'cd .. && mkdir scripts && cd scripts && '
       else:
           lephar_commands += 'cd ../scripts && '
 
-      for script in ['ClusterByMCS']:
-          lephar_commands += 'wget {} && unzip {}.zip && rm {}.zip && '.format(cls.getZipUrl(script), script, script)
+      script = 'ClusterByMCS'
+      #lephar_commands += 'wget {} && unzip {}.zip && rm {}.zip && '.format(cls.getZipUrl(script), script, script)
 
       lephar_commands += 'conda create -c conda-forge -y -n rdkit2-env rdkit=2018.09.3 python=2.7 && '
       lephar_commands += 'cd .. && touch ' + LEPHAR_INSTALLED
